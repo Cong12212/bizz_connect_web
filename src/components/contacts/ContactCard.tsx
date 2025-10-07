@@ -10,9 +10,15 @@ type Props = {
     onUpdated: (c: Contact) => void;
 };
 
-function initialLetter(name?: string | null) {
-    const s = (name || '').trim();
-    return s ? s[0]!.toUpperCase() : '?';
+// function initialLetter(name?: string | null) {
+//     const s = (name || '').trim();
+//     return s ? s[0]!.toUpperCase() : '?';
+// }
+
+function initials(name?: string | null) {
+    const s = (name ?? "").trim();
+    if (!s) return "?";
+    return s.split(/\s+/).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join("");
 }
 
 export default function ContactCard({ c, token, onUpdated }: Props) {
@@ -21,7 +27,7 @@ export default function ContactCard({ c, token, onUpdated }: Props) {
             {/* header */}
             <div className="flex items-start gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700 ring-1 ring-sky-200">
-                    {initialLetter(c.name)}
+                    {initials(c.name)}
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
