@@ -13,9 +13,10 @@ import {
 import ContactList from "../components/contacts/ContactList";
 import ContactDetail from "../components/contacts/ContactDetail";
 import EditContactSheet from "../components/contacts/EditContactSheet";
-import EmptyState from "../components/EmptyState";
 import useMediaQuery from "../hooks/useMediaQuery";
 import ContactDetailModal from "../components/contacts/ContactDetailModal";
+import ImportContactsModal from "../components/contacts/ImportContactsModal";
+import ExportContactsModal from "../components/contacts/ExportContactsModal";
 
 export default function ContactsPage() {
     const reduxToken = useAppSelector((s) => s.auth.token);
@@ -42,6 +43,9 @@ export default function ContactsPage() {
     const isMobile = useMediaQuery("(max-width: 767.98px)");
     const [openDetailMobile, setOpenDetailMobile] = useState(false);
 
+    const [openImport, setOpenImport] = useState(false);
+    const [openExport, setOpenExport] = useState(false);
+
     useEffect(() => {
         let active = true;
         setLoading(true);
@@ -58,7 +62,9 @@ export default function ContactsPage() {
             })
             .catch((e) => setError(e?.message || "Failed to load"))
             .finally(() => setLoading(false));
-        return () => { active = false; };
+        return () => {
+            active = false;
+        };
     }, [qDebounced, page, per, sort, token]);
 
     // fetch full when chọn
@@ -70,6 +76,7 @@ export default function ContactsPage() {
                 const fallback = data.items.find((x) => x.id === selectedId) || null;
                 setSelected(fallback);
             });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedId]);
 
     const list = useMemo(() => data.items, [data.items]);
@@ -89,11 +96,16 @@ export default function ContactsPage() {
                     <div className="relative w-[min(520px,80vw)]">
                         <input
                             value={q}
-                            onChange={(e) => { setPage(1); setQ(e.target.value); }}
+                            onChange={(e) => {
+                                setPage(1);
+                                setQ(e.target.value);
+                            }}
                             placeholder="Search name, email, phone…"
                             className="w-full rounded-xl border bg-white px-4 py-2 pl-10 outline-none focus:ring-2 focus:ring-slate-300"
                         />
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔎</span>
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            🔎
+                        </span>
                     </div>
                     <select
                         value={sort}
@@ -105,8 +117,27 @@ export default function ContactsPage() {
                         <option value="-id">Newest</option>
                         <option value="id">Oldest</option>
                     </select>
+
+                    {/* Export/Import */}
                     <button
-                        onClick={() => { setSelected(null); setOpenEdit(true); }}
+                        onClick={() => setOpenExport(true)}
+                        className="rounded-xl border px-3 py-2"
+                    >
+                        Export
+                    </button>
+
+                    <button
+                        onClick={() => setOpenImport(true)}
+                        className="rounded-xl border px-3 py-2"
+                    >
+                        Import
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setSelected(null);
+                            setOpenEdit(true);
+                        }}
                         className="ml-auto rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
                     >
                         New
@@ -117,12 +148,17 @@ export default function ContactsPage() {
                 <div className="grid flex-1 min-h-0 grid-cols-1 overflow-hidden md:grid-cols-[380px_1fr]">
                     {/* LEFT: list */}
                     <section className="min-h-0 overflow-hidden border-r bg-white">
+                        {error && (
+                            <div className="m-3 rounded-md bg-red-50 p-3 text-sm text-red-600">
+                                {error}
+                            </div>
+                        )}
                         <ContactList
                             items={list}
                             total={data.total}
                             page={page}
                             last={data.last}
-                            loading={loading}                // <-- thêm
+                            loading={loading}
                             onPage={setPage}
                             selectedId={selectedId}
                             onSelect={(id) => {
@@ -134,12 +170,17 @@ export default function ContactsPage() {
                             onDelete={async (id) => {
                                 if (!confirm("Delete this contact?")) return;
                                 await deleteContact(id, token);
-                                setData((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
-                                if (selectedId === id) { setSelectedId(null); setSelected(null); }
+                                setData((d) => ({
+                                    ...d,
+                                    items: d.items.filter((x) => x.id !== id),
+                                }));
+                                if (selectedId === id) {
+                                    setSelectedId(null);
+                                    setSelected(null);
+                                }
                             }}
                         />
                     </section>
-
 
                     {/* RIGHT: detail (desktop only) */}
                     <section className="hidden overflow-y-auto p-6 md:block">
@@ -149,14 +190,19 @@ export default function ContactsPage() {
                                 onEdit={() => setOpenEdit(true)}
                                 onUpdated={(c) => {
                                     setSelected(c);
-                                    setData((d) => ({ ...d, items: d.items.map((x) => (x.id === c.id ? c : x)) }));
+                                    setData((d) => ({
+                                        ...d,
+                                        items: d.items.map((x) => (x.id === c.id ? c : x)),
+                                    }));
                                 }}
                             />
                         ) : (
                             <div className="grid h-full place-items-center text-center text-slate-500">
                                 <div>
                                     <div className="mb-2 text-4xl">👤</div>
-                                    <div className="text-lg font-medium">Chọn 1 liên hệ ở bên trái để xem chi tiết</div>
+                                    <div className="text-lg font-medium">
+                                        Chọn 1 liên hệ ở bên trái để xem chi tiết
+                                    </div>
                                     <div className="text-sm">Hoặc tạo liên hệ mới</div>
                                 </div>
                             </div>
@@ -170,10 +216,16 @@ export default function ContactsPage() {
                 open={openDetailMobile}
                 contact={selected}
                 onClose={() => setOpenDetailMobile(false)}
-                onEdit={() => { setOpenDetailMobile(false); setOpenEdit(true); }}
+                onEdit={() => {
+                    setOpenDetailMobile(false);
+                    setOpenEdit(true);
+                }}
                 onUpdated={(c) => {
                     setSelected(c);
-                    setData((d) => ({ ...d, items: d.items.map((x) => (x.id === c.id ? c : x)) }));
+                    setData((d) => ({
+                        ...d,
+                        items: d.items.map((x) => (x.id === c.id ? c : x)),
+                    }));
                 }}
             />
 
@@ -194,6 +246,26 @@ export default function ContactsPage() {
                             : { ...d, items: [c, ...d.items] };
                     });
                 }}
+            />
+
+            {/* Import modal */}
+            <ImportContactsModal
+                open={openImport}
+                onClose={() => setOpenImport(false)}
+                token={token}
+                onDone={() => {
+                    // reload list sau khi import
+                    setPage(1);
+                }}
+            />
+
+            {/* Export modal */}
+            <ExportContactsModal
+                open={openExport}
+                onClose={() => setOpenExport(false)}
+                token={token}
+                // dùng qDebounced để khớp với list đang hiển thị
+                filters={{ q: qDebounced, sort }}
             />
         </div>
     );

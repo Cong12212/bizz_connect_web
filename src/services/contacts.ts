@@ -1,4 +1,5 @@
-import { apiFetch } from "../lib/api";
+// src/services/contacts.ts
+import { apiFetch, apiFetchBlob } from "../lib/api";
 
 export type Tag = { id: number; name: string };
 
@@ -27,12 +28,14 @@ export type Paginated<T> = {
     last_page: number;
 };
 
-// Convert "" -> null (thân thiện với Laravel), giữ undefined nguyên vẹn
+// Convert "" -> null (thân thiện Laravel), giữ undefined nguyên
 function toNulls<T extends object>(obj: T): T {
     const out: Record<string, any> = {};
     for (const [k, v] of Object.entries(obj)) out[k] = v === "" ? null : v;
     return out as T;
 }
+
+/* ---------- CRUD ---------- */
 
 export async function listContacts(
     params: {
@@ -42,18 +45,18 @@ export async function listContacts(
         sort?: "name" | "-name" | "id" | "-id";
         tag_ids?: number[];
         tags?: string[];
-        tag_mode?: 'any' | 'all';
+        tag_mode?: "any" | "all";
     },
     token?: string
 ): Promise<Paginated<Contact>> {
     const p = new URLSearchParams();
     if (params.q) p.set("q", params.q);
-    if (params.page) p.set("page", String(params.page));
-    if (params.per_page) p.set("per_page", String(params.per_page));
+    if (typeof params.page === "number") p.set("page", String(params.page));
+    if (typeof params.per_page === "number") p.set("per_page", String(params.per_page));
     if (params.sort) p.set("sort", params.sort);
     if (params.tag_ids?.length) p.set("tag_ids", params.tag_ids.join(","));
-    if (params.tags?.length) p.set('tags', params.tags.join(','));   // <-- mới
-    if (params.tag_mode) p.set('tag_mode', params.tag_mode);
+    if (params.tags?.length) p.set("tags", params.tags.join(","));
+    if (params.tag_mode) p.set("tag_mode", params.tag_mode);
     return apiFetch(`/contacts?${p.toString()}`, undefined, token);
 }
 
@@ -64,7 +67,7 @@ export async function listRecentContacts(q: string, token?: string) {
     return apiFetch<Paginated<Contact>>(`/contacts?${p.toString()}`, undefined, token);
 }
 
-export async function getContact(id: number, token?: string): Promise<Contact> {
+export async function getContact(id: number, token?: string) {
     const res = await apiFetch<{ data: Contact } | Contact>(`/contacts/${id}`, undefined, token);
     return (res as any).data ?? (res as Contact);
 }
@@ -93,7 +96,7 @@ export async function deleteContact(id: number, token?: string) {
 
 export async function attachTags(
     contactId: number,
-    body: { ids?: number[]; names?: string[]; company_id?: number | null },
+    body: { ids?: number[]; names?: string[] },
     token?: string
 ) {
     return apiFetch<Contact>(
@@ -105,4 +108,86 @@ export async function attachTags(
 
 export async function detachTag(contactId: number, tagId: number, token?: string) {
     return apiFetch<Contact>(`/contacts/${contactId}/tags/${tagId}`, { method: "DELETE" }, token);
+}
+
+/* ---------- Export / Import ---------- */
+
+/** URL tương đối (nếu cần hiển thị link ở UI) */
+export function exportContactsUrl(params: {
+    q?: string;
+    sort?: "name" | "-name" | "id" | "-id";
+    tag_ids?: number[];
+    tags?: string[];
+    tag_mode?: "any" | "all";
+    format?: "xlsx" | "csv";
+    ids?: number[]; // optional
+}) {
+    const p = new URLSearchParams();
+    if (params.q) p.set("q", params.q);
+    if (params.sort) p.set("sort", params.sort);
+    if (params.tag_ids?.length) p.set("tag_ids", params.tag_ids.join(","));
+    if (params.tags?.length) p.set("tags", params.tags.join(","));
+    if (params.tag_mode) p.set("tag_mode", params.tag_mode);
+    if (params.ids?.length) p.set("ids", params.ids.join(","));
+    p.set("format", params.format || "xlsx");
+    return `/contacts/export?${p.toString()}`;
+}
+
+/** Tải export (xlsx/csv). Hỗ trợ truyền ids để export các item đã chọn */
+export async function downloadContactsExport(
+    params: {
+        q?: string;
+        sort?: "name" | "-name" | "id" | "-id";
+        tag_ids?: number[];
+        tags?: string[];
+        tag_mode?: "any" | "all";
+        format?: "xlsx" | "csv";
+        ids?: number[];
+    },
+    token?: string
+) {
+    const p = new URLSearchParams();
+    if (params.q) p.set("q", params.q);
+    if (params.sort) p.set("sort", params.sort);
+    if (params.tag_ids?.length) p.set("tag_ids", params.tag_ids.join(","));
+    if (params.tags?.length) p.set("tags", params.tags.join(","));
+    if (params.tag_mode) p.set("tag_mode", params.tag_mode);
+    if (params.ids?.length) p.set("ids", params.ids.join(","));
+    p.set("format", params.format || "xlsx");
+
+    const blob = await apiFetchBlob(`/contacts/export?${p.toString()}`, undefined, token);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `contacts_${new Date()
+        .toISOString()
+        .replace(/[:T\-\.Z]/g, "")
+        .slice(0, 14)}.${params.format || "xlsx"}`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+}
+
+/** Tải file mẫu (chỉ header) */
+export async function downloadContactsTemplate(format: "xlsx" | "csv" = "xlsx", token?: string) {
+    const blob = await apiFetchBlob(`/contacts/export-template?format=${format}`, undefined, token);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `contacts_template.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+}
+
+/** Import danh bạ từ Excel/CSV */
+export async function importContacts(
+    file: File,
+    match_by: "id" | "email" | "phone" = "id",
+    token?: string
+) {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("match_by", match_by);
+    return apiFetch(`/contacts/import`, { method: "POST", body: form }, token);
 }
