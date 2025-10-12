@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import api from "@/services/api";
+import { requestPasswordReset, verifyPasswordReset, resendPasswordCode } from "@/services/auth";
 
 const inputCls =
     "mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-300";
@@ -17,7 +17,9 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
     // B1: yêu cầu reset (gửi email + new_password)
     async function sendCode(e: FormEvent) {
         e.preventDefault();
-        setErr(null); setMsg(null);
+        setErr(null);
+        setMsg(null);
+
         const em = email.trim();
         if (!em) return setErr("Please enter your email.");
         if (!pw) return setErr("Please enter new password.");
@@ -26,7 +28,7 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
 
         setBusy(true);
         try {
-            await api.post("/auth/password/request", { email: em, new_password: pw });
+            await requestPasswordReset(em, pw);
             setMsg("Verification code sent to your email.");
             setStep(2);
         } catch (e: any) {
@@ -39,13 +41,14 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
     // B2: xác minh mã (email + code). Thành công => quay về login
     async function confirmReset(e: FormEvent) {
         e.preventDefault();
-        setErr(null); setMsg(null);
-        const em = email.trim();
+        setErr(null);
+        setMsg(null);
+
         if (!code.trim()) return setErr("Please enter the verification code.");
 
         setBusy(true);
         try {
-            await api.post("/auth/password/verify", { email: em, code: code.trim() });
+            await verifyPasswordReset(email.trim(), code.trim());
             setMsg("Password updated. Redirecting to sign in…");
             setTimeout(onBack, 1200);
         } catch (e: any) {
@@ -168,9 +171,10 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
                             type="button"
                             disabled={busy}
                             onClick={async () => {
-                                setErr(null); setMsg(null);
+                                setErr(null);
+                                setMsg(null);
                                 try {
-                                    await api.post("/auth/password/resend", { email: email.trim() });
+                                    await resendPasswordCode(email.trim());
                                     setMsg("Code resent.");
                                 } catch (e: any) {
                                     setErr(e?.response?.data?.message || e?.message || "Cannot resend code.");

@@ -1,9 +1,11 @@
-import { NavLink } from "react-router-dom";
-import { Home as HomeIcon, Users, Bell, Settings, Menu, Plus } from "lucide-react";
+// src/components/AppNav.tsx
+import { NavLink, useNavigate } from "react-router-dom";
+import { Home as HomeIcon, Users, Bell, Tag, ChartBar, Menu, Settings, Plus } from "lucide-react";
+import React from "react";
 
 type Props = {
     variant: "sidebar" | "mobile";
-    onNewContact?: () => void;
+    onOpenSettings?: () => void;           // ⬅️ đổi tên prop
     className?: string;
 };
 
@@ -13,15 +15,19 @@ type LinkItem = {
     Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
+// KHÔNG có Settings trong links nữa (vì là button riêng)
 const links: LinkItem[] = [
     { to: "/dashboard", label: "Home", Icon: HomeIcon },
     { to: "/contacts", label: "Contacts", Icon: Users },
-    { to: "/alerts", label: "Alerts", Icon: Bell },
-    { to: "/settings", label: "Settings", Icon: Settings },
+    { to: "/tags", label: "Tags", Icon: Tag },
+    { to: "/reminders", label: "Reminders", Icon: ChartBar },
+    { to: "/notifications", label: "Notifications", Icon: Bell },
 ];
 
-export default function AppNav({ variant, onNewContact, className }: Props) {
-    /* ========== MOBILE TOP BAR ========== */
+export default function AppNav({ variant, onOpenSettings, className }: Props) {
+    const navigate = useNavigate();
+    const goSettings = () => (onOpenSettings ? onOpenSettings() : navigate("/settings"));
+
     if (variant === "mobile") {
         return (
             <div
@@ -57,11 +63,12 @@ export default function AppNav({ variant, onNewContact, className }: Props) {
                             </NavLink>
                         ))}
 
+                        {/* Button Settings thay cho New contact */}
                         <button
-                            onClick={onNewContact}
+                            onClick={goSettings}
                             className="mt-2 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left hover:bg-slate-50"
                         >
-                            <Plus className="h-4 w-4" aria-hidden /> New contact
+                            <Settings className="h-4 w-4" aria-hidden /> Settings
                         </button>
                     </div>
                 </details>
@@ -69,7 +76,7 @@ export default function AppNav({ variant, onNewContact, className }: Props) {
         );
     }
 
-    /* ========== DESKTOP SIDEBAR ========== */
+    // Sidebar (Desktop)
     return (
         <aside
             className={
@@ -87,9 +94,7 @@ export default function AppNav({ variant, onNewContact, className }: Props) {
                         className={({ isActive }) =>
                             [
                                 "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition",
-                                isActive
-                                    ? "bg-white text-slate-900 shadow ring-1 ring-white/60"
-                                    : "text-white/90 hover:bg-white/10",
+                                isActive ? "bg-white text-slate-900 shadow ring-1 ring-white/60" : "text-white/90 hover:bg-white/10",
                             ].join(" ")
                         }
                     >
@@ -99,11 +104,12 @@ export default function AppNav({ variant, onNewContact, className }: Props) {
                 ))}
             </nav>
 
+            {/* Button Settings ở vị trí nút New contact cũ */}
             <button
-                onClick={onNewContact}
+                onClick={goSettings}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white/95 px-3 py-2 font-semibold text-slate-900 shadow hover:bg-white"
             >
-                <Plus className="h-4 w-4" aria-hidden /> New contact
+                <Settings className="h-4 w-4" aria-hidden /> Settings
             </button>
         </aside>
     );

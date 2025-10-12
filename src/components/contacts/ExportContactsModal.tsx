@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { Contact } from '../../services/contacts';
 import { listContacts, downloadContactsExport } from '../../services/contacts';
 
-
 type ExportFilters = {
     q?: string;
     sort?: 'name' | '-name' | 'id' | '-id';
@@ -13,16 +12,36 @@ type ExportFilters = {
     tag_mode?: 'any' | 'all';
 };
 
-type Props = {
+type BaseProps = {
     open: boolean;
     onClose: () => void;
     token: string;
     filters: ExportFilters;
 };
 
+/** mode:
+ * - export (mặc định): y như cũ (có chọn format, 3 nút Export)
+ * - pick: dùng như contact selector (ẩn format, có nút Confirm)
+ */
+type Props = BaseProps & {
+    mode?: 'export' | 'pick';
+    confirmLabel?: string;                    // dùng khi mode="pick"
+    onConfirm?: (ids: number[]) => void | Promise<void>; // dùng khi mode="pick"
+};
+
 type PageData = { items: Contact[]; total: number; last: number };
 
-export default function ExportContactsModal({ open, onClose, token, filters }: Props) {
+export default function ExportContactsModal({
+    open,
+    onClose,
+    token,
+    filters,
+    mode = 'export',
+    confirmLabel = 'Confirm',
+    onConfirm,
+}: Props) {
+    const isPick = mode === 'pick';
+
     const [page, setPage] = useState(1);
     const [per] = useState(20);
     const [data, setData] = useState<PageData>({ items: [], total: 0, last: 1 });
@@ -94,6 +113,7 @@ export default function ExportContactsModal({ open, onClose, token, filters }: P
         });
     }
 
+    // ====== Export actions (giữ nguyên) ======
     async function doExportSelected() {
         if (!selected.size) return;
         setBusy(true);
@@ -135,6 +155,21 @@ export default function ExportContactsModal({ open, onClose, token, filters }: P
         }
     }
 
+    // ====== Pick actions ======
+    async function doConfirmPick() {
+        if (!isPick || !onConfirm || !selected.size) return;
+        setBusy(true);
+        setErr(null);
+        try {
+            await onConfirm(Array.from(selected));
+            onClose();
+        } catch (e: any) {
+            setErr(e?.message || 'Action failed');
+        } finally {
+            setBusy(false);
+        }
+    }
+
     if (!open) return null;
 
     return (
@@ -148,17 +183,24 @@ export default function ExportContactsModal({ open, onClose, token, filters }: P
                     <div className="flex max-h-[90svh] flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
                         {/* Header (cố định) */}
                         <div className="flex items-center justify-between border-b px-4 py-3">
-                            <h3 className="text-base font-semibold">Export contacts</h3>
+                            <h3 className="text-base font-semibold">
+                                {isPick ? 'Select contacts' : 'Export contacts'}
+                            </h3>
+
                             <div className="flex items-center gap-3">
-                                <span className="text-xs text-slate-500">Format:</span>
-                                <select
-                                    value={format}
-                                    onChange={(e) => setFormat(e.target.value as 'xlsx' | 'csv')}
-                                    className="rounded-md border px-2 py-1 text-sm text-slate-700"
-                                >
-                                    <option value="xlsx">.xlsx</option>
-                                    <option value="csv">.csv</option>
-                                </select>
+                                {!isPick && (
+                                    <>
+                                        <span className="text-xs text-slate-500">Format:</span>
+                                        <select
+                                            value={format}
+                                            onChange={(e) => setFormat(e.target.value as 'xlsx' | 'csv')}
+                                            className="rounded-md border px-2 py-1 text-sm text-slate-700"
+                                        >
+                                            <option value="xlsx">.xlsx</option>
+                                            <option value="csv">.csv</option>
+                                        </select>
+                                    </>
+                                )}
                                 <button onClick={onClose} className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100">
                                     ✕
                                 </button>
@@ -247,7 +289,7 @@ export default function ExportContactsModal({ open, onClose, token, filters }: P
                             className="flex flex-col gap-2 border-t bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
                             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                         >
-                            {/* pager (giữa ở mobile, trái ở desktop) */}
+                            {/* pager */}
                             <div className="order-2 flex justify-center sm:order-1 sm:justify-start">
                                 <NumberPager current={page} total={Math.max(1, data.last)} onPage={setPage} />
                             </div>
@@ -257,29 +299,42 @@ export default function ExportContactsModal({ open, onClose, token, filters }: P
                                 <div className="text-xs text-slate-600">
                                     Selected: <span className="font-semibold">{selected.size}</span> / {data.total}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={doExportCurrentPage}
-                                        disabled={busy || loading || !pageIds.length}
-                                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
-                                    >
-                                        Export this page {pageIds.length ? `(${pageIds.length})` : ''}
-                                    </button>
-                                    <button
-                                        onClick={doExportAll}
-                                        disabled={busy || loading || data.total === 0}
-                                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
-                                    >
-                                        Export all ({data.total})
-                                    </button>
-                                    <button
-                                        onClick={doExportSelected}
-                                        disabled={busy || loading || selected.size === 0}
-                                        className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-                                    >
-                                        Export selected {selected.size ? `(${selected.size})` : ''}
-                                    </button>
-                                </div>
+
+                                {isPick ? (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={doConfirmPick}
+                                            disabled={busy || loading || selected.size === 0}
+                                            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                                        >
+                                            {confirmLabel} {selected.size ? `(${selected.size})` : ''}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={doExportCurrentPage}
+                                            disabled={busy || loading || !pageIds.length}
+                                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            Export this page {pageIds.length ? `(${pageIds.length})` : ''}
+                                        </button>
+                                        <button
+                                            onClick={doExportAll}
+                                            disabled={busy || loading || data.total === 0}
+                                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                            Export all ({data.total})
+                                        </button>
+                                        <button
+                                            onClick={doExportSelected}
+                                            disabled={busy || loading || selected.size === 0}
+                                            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                                        >
+                                            Export selected {selected.size ? `(${selected.size})` : ''}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -299,15 +354,9 @@ function getVisiblePages(current: number, total: number, max = 7): (number | '..
     let end = Math.min(total, start + max - 1);
     start = Math.max(1, end - max + 1);
     const pages: (number | '...')[] = [];
-    if (start > 1) {
-        pages.push(1);
-        if (start > 2) pages.push('...');
-    }
+    if (start > 1) { pages.push(1); if (start > 2) pages.push('...'); }
     for (let i = start; i <= end; i++) pages.push(i);
-    if (end < total) {
-        if (end < total - 1) pages.push('...');
-        pages.push(total);
-    }
+    if (end < total) { if (end < total - 1) pages.push('...'); pages.push(total); }
     return pages;
 }
 
@@ -340,21 +389,18 @@ function NumberPager({
 
             <div className="flex items-center divide-x divide-slate-200">
                 {pages.map((n, i) =>
-                    n === '...' ? (
-                        <span key={`dots-${i}`} className="px-2 text-sm text-slate-500">
-                            …
-                        </span>
-                    ) : (
-                        <button
-                            key={`p-${n}`}
-                            aria-current={n === current ? 'page' : undefined}
-                            onClick={() => n !== current && onPage(n)}
-                            className={`${btn} ${n === current ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-400' : 'hover:bg-slate-50'
-                                }`}
-                        >
-                            {n}
-                        </button>
-                    )
+                    n === '...'
+                        ? <span key={`dots-${i}`} className="px-2 text-sm text-slate-500">…</span>
+                        : (
+                            <button
+                                key={`p-${n}`}
+                                aria-current={n === current ? 'page' : undefined}
+                                onClick={() => n !== current && onPage(n)}
+                                className={`${btn} ${n === current ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-400' : 'hover:bg-slate-50'}`}
+                            >
+                                {n}
+                            </button>
+                        )
                 )}
             </div>
 

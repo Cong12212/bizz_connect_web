@@ -25,9 +25,7 @@ export default function LoginForm({
         setErr(null);
         setSubmitting(true);
         try {
-            const { verified } = await dispatch(
-                loginThunk({ email, password: pw })
-            ).unwrap();
+            const { verified } = await dispatch(loginThunk({ email, password: pw })).unwrap();
             nav(verified ? onSuccessRoute : "/verify-email", { replace: true });
         } catch (e: any) {
             const status = e?.response?.status ?? e?.status;
@@ -55,9 +53,7 @@ export default function LoginForm({
             </label>
 
             <label className="block">
-                <span className="flex items-center justify-between text-sm text-slate-600">
-                    Password
-                </span>
+                <span className="flex items-center justify-between text-sm text-slate-600">Password</span>
                 <input
                     type="password"
                     required

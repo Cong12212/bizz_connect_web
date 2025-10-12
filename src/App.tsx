@@ -10,6 +10,8 @@ import ResetVerify from './pages/ResetVerify';
 import ContactsPage from './pages/Contacts';
 import TagsPage from './pages/Tags';
 import RemindersPage from './pages/Remiders';
+import NotificationsPage from './pages/notifications';
+import SettingsPage from './pages/Setting';
 
 export default function App() {
   return (
@@ -92,6 +94,23 @@ export default function App() {
         element={
           <VerifiedRoute>
             <RemindersPage />
+          </VerifiedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <VerifiedRoute>
+            <NotificationsPage />
+          </VerifiedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <VerifiedRoute>
+            <SettingsPage />
           </VerifiedRoute>
         }
       />
