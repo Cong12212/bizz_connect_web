@@ -1,15 +1,12 @@
-// src/app/reminders/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AppNav from '../components/AppNav';
 import { useAppSelector } from '../utils/hooks';
 import useDebounced from '../hooks/useDebounced';
 import SelectContactsModal from '../components/contacts/SelectContactsModal';
 import ReminderFormModal from '../components/reminders/ReminderFormModal';
 import type { Reminder } from '../services/reminders';
-
-
 import {
     listReminderEdges,
     detachReminderContact,
@@ -19,7 +16,7 @@ import {
     type ReminderEdge,
     type ReminderStatus,
 } from '../services/reminders';
-
+import { useToast } from '../components/ui/Toast';
 
 type Group = {
     id: number;
@@ -30,51 +27,98 @@ type Group = {
     contacts: { id: number; name: string; company?: string | null; is_primary: boolean }[];
 };
 
-const fmtLocal = (iso?: string | null) =>
-    iso ? new Date(iso).toLocaleString() : '—';
+const fmtLocal = (iso?: string | null) => (iso ? new Date(iso).toLocaleString() : '—');
+
+/* ---------- Small helpers ---------- */
+function cn(...xs: Array<string | false | null | undefined>) {
+    return xs.filter(Boolean).join(' ');
+}
+
+/** A tiny popover used for "+N more" */
+function MorePopover({
+    open,
+    onClose,
+    anchorClassName,
+    children,
+}: {
+    open: boolean;
+    onClose: () => void;
+    anchorClassName?: string;
+    children: React.ReactNode;
+}) {
+    const ref = useRef<HTMLDivElement | null>(null);
+
+    // close on click outside
+    useEffect(() => {
+        if (!open) return;
+        function onDoc(e: MouseEvent) {
+            if (!ref.current) return;
+            if (!ref.current.contains(e.target as Node)) onClose();
+        }
+        document.addEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
+    }, [open, onClose]);
+
+    return (
+        <div className={cn('relative inline-block', anchorClassName)}>
+            {open && (
+                <div
+                    ref={ref}
+                    className="absolute z-40 mt-1 w-[320px] rounded-xl border bg-white shadow-xl ring-1 ring-slate-200"
+                    onMouseLeave={onClose}
+                >
+                    <div className="max-h-[280px] overflow-y-auto p-2">{children}</div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function RemindersPage() {
     const reduxToken = useAppSelector((s) => s.auth.token);
     const token =
-        reduxToken ||
-        (typeof window !== 'undefined' ? localStorage.getItem('bc_token') || '' : '');
+        reduxToken || (typeof window !== 'undefined' ? localStorage.getItem('bc_token') || '' : '');
 
-    // bộ lọc
+    const toast = useToast();
+
+    // filters
     const [status, setStatus] = useState<'' | ReminderStatus>('');
     const [overdue, setOverdue] = useState(false);
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
     const [contactId, setContactId] = useState<number | undefined>(undefined);
 
-    // phân trang (vẫn dựa theo pivot; FE sẽ gộp lại khi hiển thị)
+    // paging (server returns edges; FE groups by reminder)
     const [page, setPage] = useState(1);
-    const [reloadKey, setReloadKey] = useState(0);
     const [perPage, setPerPage] = useState(20);
+    const [reloadKey, setReloadKey] = useState(0);
 
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState<string | null>(null);
 
-    // dữ liệu gốc (edges) + gộp theo reminder
+    // raw edges + pagination
     const [edges, setEdges] = useState<ReminderEdge[]>([]);
     const [lastPage, setLastPage] = useState(1);
 
-    // selection theo "reminder id" (đơn giản cho bulk)
+    // selection by reminder id (for bulk)
     const [selected, setSelected] = useState<Set<number>>(new Set());
 
-    // mở modal chọn contact để lọc
+    // contact picker modal
     const [pickContactOpen, setPickContactOpen] = useState(false);
 
-    // trạng thái expand chips theo reminder
-    const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+    // which reminder's "+N more" is open
+    const [openMoreOf, setOpenMoreOf] = useState<number | null>(null);
+
+    // bulk action busy
+    const [bulkBusy, setBulkBusy] = useState(false);
 
     const debKey = useDebounced(
         JSON.stringify({ status, overdue, from, to, contactId, page, perPage }),
-        200
+        250,
     );
 
     const [formOpen, setFormOpen] =
         useState<false | { mode: 'create' } | { mode: 'edit'; row: Reminder }>(false);
-
 
     useEffect(() => {
         let alive = true;
@@ -91,7 +135,7 @@ export default function RemindersPage() {
                 page,
                 per_page: perPage,
             },
-            token
+            token,
         )
             .then((res) => {
                 if (!alive) return;
@@ -106,7 +150,7 @@ export default function RemindersPage() {
         };
     }, [debKey, token, reloadKey]);
 
-    // ======= GỘP THEO REMINDER =======
+    // ======= GROUP BY REMINDER =======
     const groups: Group[] = useMemo(() => {
         const map = new Map<number, Group>();
         for (const e of edges) {
@@ -122,7 +166,6 @@ export default function RemindersPage() {
                 };
                 map.set(e.reminder_id, g);
             } else {
-                // cập nhật meta nếu có thay đổi mới hơn (hiếm khi cần)
                 if (e.due_at !== g.due_at) g.due_at = e.due_at;
                 if (e.status !== g.status) g.status = e.status;
                 if (e.title !== g.title) g.title = e.title;
@@ -135,10 +178,9 @@ export default function RemindersPage() {
                 is_primary: !!e.is_primary,
             });
         }
-        // sắp xếp chip: primary lên trước
         const arr = Array.from(map.values());
         arr.forEach((g) =>
-            g.contacts.sort((a, b) => (a.is_primary === b.is_primary ? 0 : a.is_primary ? -1 : 1))
+            g.contacts.sort((a, b) => (a.is_primary === b.is_primary ? 0 : a.is_primary ? -1 : 1)),
         );
         return arr;
     }, [edges]);
@@ -164,36 +206,74 @@ export default function RemindersPage() {
         });
     }
 
-    // ======= Hành động =======
+    function edgesFromReminder(r: Reminder): ReminderEdge[] {
+        const contacts = (r as any).contacts || [];
+        return contacts.map((c: any) => ({
+            reminder_id: r.id,
+            title: r.title,
+            note: r.note ?? null,
+            due_at: r.due_at,
+            status: r.status,
+            channel: r.channel,
+            contact_id: c.id,
+            contact_name: c.name,
+            contact_company: c.company ?? null,
+            is_primary: c.pivot?.is_primary ? 1 : 0,
+        }));
+    }
+
+    // ======= ACTIONS =======
     async function doBulkStatus(s: ReminderStatus) {
         const ids = Array.from(selected);
         if (!ids.length) return;
-        await bulkUpdateReminderStatus(ids, s, token);
-        // cập nhật giao diện
-        setEdges((es) => es.map((e) => (ids.includes(e.reminder_id) ? { ...e, status: s } : e)));
-        setSelected(new Set());
+        setBulkBusy(true);
+        try {
+            await bulkUpdateReminderStatus(ids, s, token);
+            setEdges((es) => es.map((e) => (ids.includes(e.reminder_id) ? { ...e, status: s } : e)));
+            setSelected(new Set());
+            toast.success(`Updated ${ids.length} reminder(s) to "${s}".`);
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to update reminders');
+        } finally {
+            setBulkBusy(false);
+        }
     }
 
     async function doBulkDelete() {
         const ids = Array.from(selected);
         if (!ids.length) return;
         if (!confirm(`Delete ${ids.length} reminder(s)?`)) return;
-        await bulkDeleteReminders(ids, token);
-        setEdges((es) => es.filter((e) => !ids.includes(e.reminder_id)));
-        setSelected(new Set());
+        setBulkBusy(true);
+        try {
+            await bulkDeleteReminders(ids, token);
+            setEdges((es) => es.filter((e) => !ids.includes(e.reminder_id)));
+            setSelected(new Set());
+            toast.success(`Deleted ${ids.length} reminder(s).`);
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to delete reminders');
+        } finally {
+            setBulkBusy(false);
+        }
     }
 
     async function markDoneOne(reminderId: number) {
-        await updateReminder(reminderId, { status: 'done' }, token);
-        setEdges((es) => es.map((e) => (e.reminder_id === reminderId ? { ...e, status: 'done' } : e)));
+        try {
+            await updateReminder(reminderId, { status: 'done' }, token);
+            setEdges((es) => es.map((e) => (e.reminder_id === reminderId ? { ...e, status: 'done' } : e)));
+            toast.success('Marked as done.');
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to update status');
+        }
     }
 
-
     async function detachOne(reminderId: number, contactId: number) {
-        await detachReminderContact(reminderId, contactId, token);
-        setEdges((es) =>
-            es.filter((e) => !(e.reminder_id === reminderId && e.contact_id === contactId))
-        );
+        try {
+            await detachReminderContact(reminderId, contactId, token);
+            setEdges((es) => es.filter((e) => !(e.reminder_id === reminderId && e.contact_id === contactId)));
+            toast.success('Contact detached from reminder.');
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to detach contact');
+        }
     }
 
     function StatusBadge({ s }: { s: ReminderStatus }) {
@@ -205,13 +285,11 @@ export default function RemindersPage() {
                     : s === 'skipped'
                         ? 'bg-slate-100 text-slate-700 ring-slate-200'
                         : 'bg-rose-50 text-rose-700 ring-rose-200';
-        return (
-            <span className={`inline-block rounded-full px-2 py-0.5 text-xs ring-1 ${cls}`}>{s}</span>
-        );
+        return <span className={cn('inline-block rounded-full px-2 py-0.5 text-xs ring-1', cls)}>{s}</span>;
     }
 
     function openEdit(g: Group) {
-        const firstContactId = g.contacts[0]?.id ?? 0; // lấy contact đầu làm mặc định
+        const firstContactId = g.contacts[0]?.id ?? 0;
         const row: Reminder = {
             id: g.id,
             contact_id: firstContactId,
@@ -238,7 +316,7 @@ export default function RemindersPage() {
 
             <main className="md:ml-64 h-screen overflow-hidden p-4">
                 <div className="mx-auto max-w-6xl">
-                    {/* ====== Toolbar lọc ====== */}
+                    {/* Toolbar */}
                     <div className="mb-3 flex flex-wrap items-center gap-3">
                         <h1 className="text-lg font-semibold">Reminders</h1>
 
@@ -256,18 +334,6 @@ export default function RemindersPage() {
                             <option value="skipped">skipped</option>
                             <option value="cancelled">cancelled</option>
                         </select>
-
-                        <label className="ml-2 inline-flex items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={overdue}
-                                onChange={(e) => {
-                                    setOverdue(e.target.checked);
-                                    setPage(1);
-                                }}
-                            />
-                            Overdue only
-                        </label>
 
                         <div className="ml-2 flex items-center gap-2 text-sm">
                             <span>From</span>
@@ -292,12 +358,6 @@ export default function RemindersPage() {
                             />
                         </div>
 
-                        <button
-                            onClick={() => setPickContactOpen(true)}
-                            className="rounded-md border px-3 py-2 text-sm hover:bg-slate-50"
-                        >
-                            {contactId ? `Contact #${contactId}` : 'Filter by contact'}
-                        </button>
                         <div className="ml-auto flex items-center gap-2">
                             <button
                                 onClick={() => setFormOpen({ mode: 'create' })}
@@ -306,6 +366,7 @@ export default function RemindersPage() {
                                 New reminder
                             </button>
                         </div>
+
                         {contactId && (
                             <button
                                 onClick={() => setContactId(undefined)}
@@ -316,11 +377,9 @@ export default function RemindersPage() {
                         )}
                     </div>
 
-                    {err && (
-                        <div className="mb-2 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>
-                    )}
+                    {err && <div className="mb-2 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>}
 
-                    {/* ====== Bảng gọn: 1 dòng / reminder ====== */}
+                    {/* Table */}
                     <div className="overflow-hidden rounded-xl border bg-white">
                         <div className="grid grid-cols-[40px_1.3fr_1.4fr_1fr_140px_210px] border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
                             <div className="flex items-center">
@@ -328,7 +387,7 @@ export default function RemindersPage() {
                                     type="checkbox"
                                     aria-label="Select all on this page"
                                     disabled={loading || pageIds.length === 0}
-                                    className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="disabled:cursor-not-allowed disabled:opacity-50"
                                     checked={allPageChecked && !loading}
                                     ref={(el) => {
                                         if (el) el.indeterminate = !loading && somePageChecked;
@@ -353,9 +412,8 @@ export default function RemindersPage() {
                             <ul>
                                 {groups.map((g) => {
                                     const checked = selected.has(g.id);
-                                    const isOpen = !!expanded[g.id];
                                     const maxInline = 3;
-                                    const shown = isOpen ? g.contacts : g.contacts.slice(0, maxInline);
+                                    const shown = g.contacts.slice(0, maxInline);
                                     const hiddenCount = Math.max(0, g.contacts.length - shown.length);
 
                                     return (
@@ -367,44 +425,91 @@ export default function RemindersPage() {
                                                 <input
                                                     type="checkbox"
                                                     disabled={loading}
-                                                    className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={checked}
                                                     onChange={(e) => toggleGroup(g.id, e.target.checked)}
                                                 />
                                             </div>
 
-                                            {/* Title + note ngắn */}
                                             <div className="min-w-0">
                                                 <div className="truncate text-sm font-medium">{g.title}</div>
-                                                {g.note && (
-                                                    <div className="truncate text-xs text-slate-500">{g.note}</div>
-                                                )}
+                                                {g.note && <div className="truncate text-xs text-slate-500">{g.note}</div>}
                                             </div>
 
-                                            {/* Chips contacts gọn, có expand */}
-                                            <div className="flex flex-wrap items-center gap-1">
+                                            {/* Contacts cell */}
+                                            <div className="relative flex flex-wrap items-center gap-1">
                                                 {shown.map((c) => (
                                                     <span
                                                         key={c.id}
-                                                        className="inline-flex max-w-[220px] items-center gap-1 truncate rounded-full border px-2 py-0.5 text-xs"
-                                                        title={`${c.name}${c.company ? ' · ' + c.company : ''}`}
+                                                        className={cn(
+                                                            'inline-flex max-w-[220px] items-center gap-1 truncate rounded-full border px-2 py-0.5 text-xs',
+                                                            c.is_primary && 'border-slate-900 text-slate-900',
+                                                            !c.is_primary && 'border-slate-300 text-slate-600',
+                                                        )}
+                                                        title={`${c.name}${c.company ? ' · ' + c.company : ''}${c.is_primary ? ' · primary' : ''
+                                                            }`}
                                                     >
                                                         <span className="truncate">
                                                             {c.name}
                                                             {c.company ? ` · ${c.company}` : ''}
                                                         </span>
+                                                        <button
+                                                            className="ml-1 rounded-full px-1.5 text-rose-600 hover:bg-rose-50"
+                                                            title="Remove contact from this reminder"
+                                                            onClick={() => detachOne(g.id, c.id)}
+                                                        >
+                                                            ×
+                                                        </button>
                                                     </span>
                                                 ))}
+
+                                                {hiddenCount > 0 && (
+                                                    <MorePopover
+                                                        open={openMoreOf === g.id}
+                                                        onClose={() => setOpenMoreOf(null)}
+                                                        anchorClassName="ml-1"
+                                                    >
+                                                        {/* Popover content: full list with scroll */}
+                                                        <ul className="space-y-1">
+                                                            {g.contacts.map((c) => (
+                                                                <li
+                                                                    key={c.id}
+                                                                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-slate-50"
+                                                                    title={`${c.name}${c.company ? ' · ' + c.company : ''}`}
+                                                                >
+                                                                    <div className="min-w-0">
+                                                                        <div className="truncate text-sm">
+                                                                            {c.name}
+                                                                            {c.company ? ` · ${c.company}` : ''}
+                                                                        </div>
+                                                                        {c.is_primary && (
+                                                                            <span className="text-[10px] text-slate-500">primary</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <button
+                                                                        className="rounded-full px-2 text-xs text-rose-600 hover:bg-rose-50"
+                                                                        onClick={() => detachOne(g.id, c.id)}
+                                                                    >
+                                                                        Remove
+                                                                    </button>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </MorePopover>
+                                                )}
+
                                                 {hiddenCount > 0 && (
                                                     <button
-                                                        className="rounded-full border px-2 py-0.5 text-xs hover:bg-slate-50"
-                                                        onClick={() => setExpanded((ex) => ({ ...ex, [g.id]: !isOpen }))}
+                                                        className="rounded-full border px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50"
+                                                        onClick={() => setOpenMoreOf((cur) => (cur === g.id ? null : g.id))}
+                                                        aria-haspopup="dialog"
+                                                        aria-expanded={openMoreOf === g.id}
+                                                        title={`${hiddenCount} more contact(s)`}
                                                     >
-                                                        {isOpen ? 'Show less' : `+${hiddenCount} more`}
+                                                        +{hiddenCount} more
                                                     </button>
                                                 )}
                                             </div>
-
 
                                             <div className="truncate text-sm">{fmtLocal(g.due_at)}</div>
 
@@ -433,14 +538,18 @@ export default function RemindersPage() {
                                                     className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs text-rose-700 hover:bg-rose-100"
                                                     onClick={async () => {
                                                         if (!confirm('Delete this reminder (all contacts)?')) return;
-                                                        await bulkDeleteReminders([g.id], token);
-                                                        setEdges((es) => es.filter((e) => e.reminder_id !== g.id));
+                                                        try {
+                                                            await bulkDeleteReminders([g.id], token);
+                                                            setEdges((es) => es.filter((e) => e.reminder_id !== g.id));
+                                                            toast.success('Reminder deleted.');
+                                                        } catch (e: any) {
+                                                            toast.error(e?.message || 'Failed to delete reminder');
+                                                        }
                                                     }}
                                                 >
                                                     Delete reminder
                                                 </button>
                                             </div>
-
                                         </li>
                                     );
                                 })}
@@ -506,21 +615,21 @@ export default function RemindersPage() {
                             <div className="order-1 flex flex-wrap items-center gap-2 sm:order-2">
                                 <button
                                     onClick={() => doBulkStatus('done')}
-                                    disabled={selected.size === 0}
+                                    disabled={selected.size === 0 || bulkBusy}
                                     className="rounded-md border px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"
                                 >
-                                    Mark done (bulk)
+                                    {bulkBusy ? 'Working…' : 'Mark done (bulk)'}
                                 </button>
                                 <button
                                     onClick={() => doBulkStatus('pending')}
-                                    disabled={selected.size === 0}
+                                    disabled={selected.size === 0 || bulkBusy}
                                     className="rounded-md border px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"
                                 >
                                     Set pending (bulk)
                                 </button>
                                 <button
                                     onClick={doBulkDelete}
-                                    disabled={selected.size === 0}
+                                    disabled={selected.size === 0 || bulkBusy}
                                     className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-100 disabled:opacity-50"
                                 >
                                     Delete selected reminders
@@ -531,7 +640,6 @@ export default function RemindersPage() {
                 </div>
             </main>
 
-            {/* Picker lọc theo contact */}
             <SelectContactsModal
                 open={pickContactOpen}
                 onClose={() => setPickContactOpen(false)}
@@ -555,29 +663,19 @@ export default function RemindersPage() {
                     onSaved={(saved) => {
                         setFormOpen(false);
                         if (formOpen.mode === 'edit') {
-                            // cập nhật lại list (edges) cho reminder đã sửa
-                            setEdges((es) =>
-                                es.map((e) =>
-                                    e.reminder_id === saved.id
-                                        ? {
-                                            ...e,
-                                            title: saved.title,
-                                            note: saved.note ?? null,
-                                            due_at: saved.due_at,
-                                            status: saved.status,
-                                            channel: saved.channel,
-                                        }
-                                        : e
-                                )
-                            );
+                            setEdges((es) => {
+                                const others = es.filter((e) => e.reminder_id !== saved.id);
+                                const fresh = edgesFromReminder(saved);
+                                return [...others, ...fresh];
+                            });
+                            toast.success('Reminder updated.');
                         } else {
-                            // create: refetch nhanh cho chắc (vì saved có thể có nhiều contact)
                             setReloadKey((k) => k + 1);
+                            toast.success('Reminder created.');
                         }
                     }}
                 />
             )}
-
         </div>
     );
 }

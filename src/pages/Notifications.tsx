@@ -130,9 +130,10 @@ export default function NotificationsPage() {
             </div>
             <AppNav variant="sidebar" />
 
+            {/* Page uses full height; inner content is a column, list area scrolls */}
             <main className="md:ml-64 h-screen overflow-hidden p-4">
-                <div className="mx-auto max-w-5xl">
-                    {/* Header */}
+                <div className="mx-auto max-w-5xl h-full flex flex-col">
+                    {/* Header / Toolbar (fixed height) */}
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                         <h1 className="text-lg font-semibold">Notifications</h1>
 
@@ -160,9 +161,10 @@ export default function NotificationsPage() {
 
                     {err && <div className="mb-2 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>}
 
-                    {/* Table */}
-                    <div className="overflow-hidden rounded-xl border bg-white">
-                        <div className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                    {/* Card: make list area scrollable */}
+                    <div className="overflow-hidden rounded-xl border bg-white flex min-h-0 flex-col">
+                        {/* Sticky table header (sticks within this card when list scrolls) */}
+                        <div className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 sticky top-0 z-10">
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -182,88 +184,93 @@ export default function NotificationsPage() {
                             <div>Actions</div>
                         </div>
 
-                        {loading ? (
-                            <div className="p-3">
-                                {Array.from({ length: 8 }).map((_, i) => (
-                                    <div key={i} className="mb-2 h-12 animate-pulse rounded-lg bg-slate-200" />
-                                ))}
-                            </div>
-                        ) : items.length ? (
-                            <ul>
-                                {items.map((n) => {
-                                    const checked = selected.has(n.id);
-                                    const emoji = typeEmoji[n.type] ?? '🔷';
-                                    const unread = n.status === 'unread';
+                        {/* Scrollable list area */}
+                        <div className="min-h-0 flex-1 overflow-y-auto">
+                            {loading ? (
+                                <div className="p-3">
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                        <div key={i} className="mb-2 h-12 animate-pulse rounded-lg bg-slate-200" />
+                                    ))}
+                                </div>
+                            ) : items.length ? (
+                                <ul>
+                                    {items.map((n) => {
+                                        const checked = selected.has(n.id);
+                                        const emoji = typeEmoji[n.type] ?? '🔷';
+                                        const unread = n.status === 'unread';
 
-                                    return (
-                                        <li
-                                            key={n.id}
-                                            className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 px-3 py-2 hover:bg-slate-50"
-                                        >
-                                            <div>
-                                                <input
-                                                    type="checkbox"
-                                                    disabled={loading}
-                                                    className="disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    checked={checked}
-                                                    onChange={(e) => toggleOne(n.id, e.target.checked)}
-                                                />
-                                            </div>
-
-                                            {/* Clickable → mark read (nếu cần) rồi navigate */}
-                                            <button
-                                                className="min-w-0 text-left"
-                                                onClick={() => openNotification(n)}
-                                                title="Open details"
+                                        return (
+                                            <li
+                                                key={n.id}
+                                                className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 px-3 py-2 hover:bg-slate-50"
                                             >
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-lg leading-none">{emoji}</span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="truncate text-sm font-medium">
-                                                            {n.title}{' '}
-                                                            {unread && (
-                                                                <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sky-500 align-middle" />
-                                                            )}
-                                                        </div>
-                                                        <div className="truncate text-xs text-slate-500">{n.body || '—'}</div>
-                                                    </div>
+                                                <div>
+                                                    <input
+                                                        type="checkbox"
+                                                        disabled={loading}
+                                                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        checked={checked}
+                                                        onChange={(e) => toggleOne(n.id, e.target.checked)}
+                                                    />
                                                 </div>
-                                            </button>
 
-                                            <div className="truncate text-xs text-slate-600">{n.type}</div>
-                                            <div className="truncate text-xs">{formatWhen(n)}</div>
+                                                {/* Clickable → mark read (nếu cần) rồi navigate */}
+                                                <button
+                                                    className="min-w-0 text-left"
+                                                    onClick={() => openNotification(n)}
+                                                    title="Open details"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg leading-none">{emoji}</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="truncate text-sm font-medium">
+                                                                {n.title}{' '}
+                                                                {unread && (
+                                                                    <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sky-500 align-middle" />
+                                                                )}
+                                                            </div>
+                                                            <div className="truncate text-xs text-slate-500">
+                                                                {n.body || '—'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </button>
 
-                                            <div className="flex flex-wrap gap-2">
-                                                {unread && (
+                                                <div className="truncate text-xs text-slate-600">{n.type}</div>
+                                                <div className="truncate text-xs">{formatWhen(n)}</div>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    {unread && (
+                                                        <button
+                                                            className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                doMarkRead(n.id);
+                                                            }}
+                                                        >
+                                                            Mark read
+                                                        </button>
+                                                    )}
                                                     <button
                                                         className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            doMarkRead(n.id);
+                                                            openNotification(n);
                                                         }}
                                                     >
-                                                        Mark read
+                                                        Open
                                                     </button>
-                                                )}
-                                                <button
-                                                    className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openNotification(n);
-                                                    }}
-                                                >
-                                                    Open
-                                                </button>
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        ) : (
-                            <div className="p-6 text-center text-sm text-slate-500">No notifications</div>
-                        )}
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            ) : (
+                                <div className="p-6 text-center text-sm text-slate-500">No notifications</div>
+                            )}
+                        </div>
 
-                        {/* Footer actions */}
+                        {/* Footer actions (stays fixed while list scrolls) */}
                         <div className="flex flex-col gap-2 border-t p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                             <div className="order-2 flex items-center gap-2 sm:order-1">
                                 <span>

@@ -31,7 +31,7 @@ export default function AuthPortal() {
                             />
                             <h1 className="mt-6 text-3xl md:text-4xl font-bold drop-shadow-sm">Biz-Connect</h1>
                             <p className="mt-3 max-w-md text-white/90 hidden sm:block">
-                                Quản lý & kết nối danh bạ doanh nghiệp, nhắc lịch follow-up và đồng bộ email/lịch làm việc — tất cả trong một nơi.
+                                Manage & connect business contacts, set follow-up reminders, and sync email/calendar — all in one place.
                             </p>
                         </div>
                     </section>

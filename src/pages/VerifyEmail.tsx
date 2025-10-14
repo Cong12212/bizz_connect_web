@@ -50,10 +50,10 @@ export default function VerifyEmail() {
     const onLogout = async () => {
         setBusy(true);
         try {
-            // best-effort: gọi logout API (không cần chặn nếu lỗi)
+
             await api.post("/auth/logout");
         } catch { }
-        dispatch(logout());                 // xoá token + user trong Redux + localStorage
+        dispatch(logout());
         setBusy(false);
         navigate("/Auth", { replace: true });
     };

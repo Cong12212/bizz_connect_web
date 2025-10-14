@@ -1,4 +1,3 @@
-// src/services/contacts.ts
 import { apiFetch, apiFetchBlob } from "../lib/api";
 
 export type Tag = { id: number; name: string };
@@ -28,7 +27,6 @@ export type Paginated<T> = {
     last_page: number;
 };
 
-// Convert "" -> null (thân thiện Laravel), giữ undefined nguyên
 function toNulls<T extends object>(obj: T): T {
     const out: Record<string, any> = {};
     for (const [k, v] of Object.entries(obj)) out[k] = v === "" ? null : v;
@@ -46,8 +44,12 @@ export async function listContacts(
         tag_ids?: number[];
         tags?: string[];
         tag_mode?: "any" | "all";
-        /** NEW (optional): lấy danh sách KHÔNG có tag này */
         without_tag?: number | string;
+        exclude_ids?: number[];          // NEW
+        without_reminder?: boolean;      // NEW
+        rem_status?: "pending" | "done" | "skipped" | "cancelled";
+        rem_after?: string;
+        rem_before?: string;
     },
     token?: string
 ): Promise<Paginated<Contact>> {
@@ -59,13 +61,22 @@ export async function listContacts(
     if (params.tag_ids?.length) p.set("tag_ids", params.tag_ids.join(","));
     if (params.tags?.length) p.set("tags", params.tags.join(","));
     if (params.tag_mode) p.set("tag_mode", params.tag_mode);
-    // 👇 thêm dòng này
     if (params.without_tag !== undefined && params.without_tag !== null) {
         p.set("without_tag", String(params.without_tag));
     }
+    if (params.exclude_ids?.length) {
+        p.set("exclude_ids", params.exclude_ids.join(","));
+    }
+
+    if (params.without_reminder) {
+        p.set("without_reminder", "1");
+        if (params.rem_status) p.set("status", params.rem_status);
+        if (params.rem_after) p.set("after", params.rem_after);
+        if (params.rem_before) p.set("before", params.rem_before);
+    }
+
     return apiFetch(`/contacts?${p.toString()}`, undefined, token);
 }
-
 
 export async function listRecentContacts(q: string, token?: string) {
     const p = new URLSearchParams();
@@ -119,7 +130,6 @@ export async function detachTag(contactId: number, tagId: number, token?: string
 
 /* ---------- Export / Import ---------- */
 
-/** URL tương đối (nếu cần hiển thị link ở UI) */
 export function exportContactsUrl(params: {
     q?: string;
     sort?: "name" | "-name" | "id" | "-id";
@@ -140,7 +150,6 @@ export function exportContactsUrl(params: {
     return `/contacts/export?${p.toString()}`;
 }
 
-/** Tải export (xlsx/csv). Hỗ trợ truyền ids để export các item đã chọn */
 export async function downloadContactsExport(
     params: {
         q?: string;
@@ -165,17 +174,13 @@ export async function downloadContactsExport(
     const blob = await apiFetchBlob(`/contacts/export?${p.toString()}`, undefined, token);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `contacts_${new Date()
-        .toISOString()
-        .replace(/[:T\-\.Z]/g, "")
-        .slice(0, 14)}.${params.format || "xlsx"}`;
+    a.download = `contacts_${new Date().toISOString().replace(/[:T\-\.Z]/g, "").slice(0, 14)}.${params.format || "xlsx"}`;
     document.body.appendChild(a);
     a.click();
     URL.revokeObjectURL(a.href);
     a.remove();
 }
 
-/** Tải file mẫu (chỉ header) */
 export async function downloadContactsTemplate(format: "xlsx" | "csv" = "xlsx", token?: string) {
     const blob = await apiFetchBlob(`/contacts/export-template?format=${format}`, undefined, token);
     const a = document.createElement("a");
@@ -187,7 +192,6 @@ export async function downloadContactsTemplate(format: "xlsx" | "csv" = "xlsx", 
     a.remove();
 }
 
-/** Import danh bạ từ Excel/CSV */
 export async function importContacts(
     file: File,
     match_by: "id" | "email" | "phone" = "id",
@@ -207,11 +211,9 @@ function buildQS(base: ListBase) {
     if (typeof base.page === "number") p.set("page", String(base.page));
     if (typeof base.per_page === "number") p.set("per_page", String(base.per_page));
     if (base.sort) p.set("sort", base.sort);
-    // KHÔNG chèn tag filters ở đây, để helper tự xử lý tuỳ trường hợp
     return p;
 }
 
-/** Lấy contact KHÔNG có tag (id hoặc name) — không phá signature cũ */
 export async function listContactsWithoutTag(
     base: ListBase,
     tag: { id?: number; name?: string },
@@ -219,21 +221,40 @@ export async function listContactsWithoutTag(
 ): Promise<Paginated<Contact>> {
     const p = buildQS(base);
     if (tag.id) p.set("without_tag", String(tag.id));
-    else if (tag.name) p.set("without_tag_name", tag.name);
+    else if (tag.name) p.set("without_tag", tag.name);
     return apiFetch(`/contacts?${p.toString()}`, undefined, token);
 }
 
-/** (tuỳ chọn) ép chắc chắn contact CÓ tag này */
 export async function listContactsWithTag(
     base: ListBase,
     tag: { id?: number; name?: string },
     token?: string
 ): Promise<Paginated<Contact>> {
-    // dùng name cho đơn giản; cần id thì set tag_ids
     const params: ListBase = {
         ...base,
         tags: [tag.name!].filter(Boolean),
         tag_mode: "all",
     };
     return listContacts(params, token);
+}
+
+export async function listContactsWithoutReminder(
+    base: {
+        q?: string; page?: number; per_page?: number;
+        sort?: "name" | "-name" | "id" | "-id";
+        exclude_ids?: number[];
+    },
+    opts?: { status?: "pending" | "done" | "skipped" | "cancelled"; after?: string; before?: string },
+    token?: string
+): Promise<Paginated<Contact>> {
+    return listContacts(
+        {
+            ...base,
+            without_reminder: true,
+            rem_status: opts?.status,
+            rem_after: opts?.after,
+            rem_before: opts?.before,
+        },
+        token
+    );
 }

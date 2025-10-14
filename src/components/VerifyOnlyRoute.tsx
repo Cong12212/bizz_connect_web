@@ -12,7 +12,7 @@ function MiniLoader() {
     );
 }
 
-export default function VerifiedRoute({ children }: { children?: React.ReactNode }) {
+export default function VerifyOnlyRoute({ children }: { children?: React.ReactNode }) {
     const dispatch = useAppDispatch();
     const { token, verified, status } = useAppSelector((s) => s.auth);
     const fired = useRef(false);
@@ -28,12 +28,12 @@ export default function VerifiedRoute({ children }: { children?: React.ReactNode
     // 1) KHÔNG token -> về /auth
     if (!token) return <Navigate to="/auth" replace />;
 
-    // đang load trạng thái
+    // đang load
     if (verified === null || status === 'loading') return <MiniLoader />;
 
-    // 2) Có token nhưng CHƯA verified -> về /verify-email
-    if (!verified) return <Navigate to="/verify-email" replace />;
+    // 2) Có token & ĐÃ verified -> về app
+    if (verified) return <Navigate to="/dashboard" replace />;
 
-    // 3) Có token & verified -> cho vào app
+    // 3) Có token nhưng CHƯA verified -> cho vào trang verify
     return <>{children}</>;
 }

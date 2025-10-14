@@ -1,10 +1,8 @@
-// src/components/contacts/SelectContactsModal.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     listContacts,
-    listContactsWithoutTag, // dùng cho tab "Without #tag"
     type Contact,
 } from '@/services/contacts';
 import type { Tag } from '@/services/tags';
@@ -28,15 +26,18 @@ export default function SelectContactsModal({
     filters,
     title = 'Select contacts',
     confirmLabel = 'Confirm',
-    onConfirm, // nếu không truyền => ẩn nút confirm chính
+    onConfirm,
     canAddTags,
     onAddTags,
-    // Toggle With/Without #tag
     focusTag,
     allowToggleWithWithout,
     onAddToFocusTag,
-    // ép modal refetch từ cha nếu muốn
     refreshKey,
+
+    /** loại bỏ các contact này khỏi list (ví dụ đã chọn sẵn) */
+    excludeIds = [],
+    /** bật chế độ "without reminder" + điều kiện */
+    withoutReminder,
 }: {
     open: boolean;
     onClose: () => void;
@@ -51,6 +52,14 @@ export default function SelectContactsModal({
     allowToggleWithWithout?: boolean;
     onAddToFocusTag?: (ids: number[], tag: Tag) => Promise<void>;
     refreshKey?: number;
+
+    excludeIds?: number[];
+    withoutReminder?: {
+        enabled: boolean;
+        status?: 'pending' | 'done' | 'skipped' | 'cancelled';
+        after?: string;
+        before?: string;
+    };
 }) {
     const [page, setPage] = useState(1);
     const [per] = useState(20);
@@ -59,8 +68,13 @@ export default function SelectContactsModal({
         total: 0,
         last: 1,
     });
+
+    // fetch state
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
+
+    // action state (confirm / add to tag)
+    const [actionBusy, setActionBusy] = useState(false);
 
     const [q, setQ] = useState(filters.q || '');
     const [sort, setSort] = useState<Filters['sort']>(filters.sort || 'name');
@@ -68,19 +82,23 @@ export default function SelectContactsModal({
     // selection (giữ xuyên trang)
     const [selected, setSelected] = useState<Set<number>>(new Set());
 
-    // add tags input
-    const [addInput, setAddInput] = useState('');
-
     // With / Without #tag
     const [viewWithout, setViewWithout] = useState(false);
 
-    // ===== Helper: cập nhật local list ngay lập tức =====
+    // mini notice (không có nút)
+    const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+    useEffect(() => {
+        if (!notice) return;
+        const t = setTimeout(() => setNotice(null), 2200);
+        return () => clearTimeout(t);
+    }, [notice]);
+
+    // ===== Helper: cập nhật local list ngay lập tức (không đụng total/last) =====
     function dropIds(ids: number[]) {
         if (!ids.length) return;
         setData((d) => ({
             ...d,
             items: d.items.filter((c) => !ids.includes(c.id)),
-            total: Math.max(0, d.total - ids.length),
         }));
         setSelected((prev) => {
             const n = new Set(prev);
@@ -96,7 +114,7 @@ export default function SelectContactsModal({
         setSelected(new Set());
         setQ(filters.q || '');
         setSort(filters.sort || 'name');
-        setViewWithout(false); // khi mở từ "Remove tag", mặc định là WITH
+        setViewWithout(false);
     }, [open]); // eslint-disable-line
 
     // đổi With/Without hoặc đổi tag => reset trang + selection
@@ -106,32 +124,52 @@ export default function SelectContactsModal({
     }, [viewWithout, focusTag?.id]);
 
     // tải danh sách
-    useEffect(() => {
+    async function fetchList() {
         if (!open) return;
-        let alive = true;
         setLoading(true);
         setErr(null);
 
-        const base = { q, sort, page, per_page: per };
+        try {
+            const base: any = { q, sort, page, per_page: per, exclude_ids: excludeIds };
 
-        const promise =
-            focusTag && allowToggleWithWithout
-                ? viewWithout
-                    ? listContactsWithoutTag(base, { id: focusTag.id, name: focusTag.name }, token)
-                    : listContacts({ ...base, tags: [focusTag.name], tag_mode: 'all' }, token)
-                : listContacts({ ...base, ...filters }, token);
+            let res: any;
+            if (withoutReminder?.enabled) {
+                res = await listContacts(
+                    {
+                        ...base,
+                        without_reminder: true,
+                        rem_status: withoutReminder.status,
+                        rem_after: withoutReminder.after,
+                        rem_before: withoutReminder.before,
+                    },
+                    token,
+                );
+            } else if (focusTag && allowToggleWithWithout) {
+                res = await listContacts(
+                    viewWithout
+                        ? { ...base, without_tag: focusTag.id ?? focusTag.name }
+                        : { ...base, tags: [focusTag.name], tag_mode: 'all' },
+                    token,
+                );
+            } else {
+                res = await listContacts({ ...base, ...filters }, token);
+            }
 
-        promise
-            .then((res) => {
-                if (!alive) return;
-                setData({ items: res.data, total: res.total, last: res.last_page });
-            })
-            .catch((e) => setErr(e?.message || 'Failed to load'))
-            .finally(() => setLoading(false));
+            setData({
+                items: res.data || [],
+                total: res.total ?? 0,
+                last: res.last_page ?? 1,
+            });
+        } catch (e: any) {
+            setErr(e?.message || 'Failed to load');
+        } finally {
+            setLoading(false);
+        }
+    }
 
-        return () => {
-            alive = false;
-        };
+    useEffect(() => {
+        fetchList();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         open,
         q,
@@ -145,6 +183,11 @@ export default function SelectContactsModal({
         allowToggleWithWithout,
         viewWithout,
         refreshKey,
+        withoutReminder?.enabled,
+        withoutReminder?.status,
+        withoutReminder?.after,
+        withoutReminder?.before,
+        excludeIds.join(','),
     ]);
 
     const pageIds = useMemo(() => data.items.map((i) => i.id), [data.items]);
@@ -171,24 +214,18 @@ export default function SelectContactsModal({
     async function handleConfirm() {
         if (!onConfirm) return;
         const ids = Array.from(selected);
-        await onConfirm(ids);
-        // Nếu đang ở WITH #tag và vừa remove tag focus → loại khỏi list ngay
-        if (focusTag && allowToggleWithWithout && !viewWithout) {
-            dropIds(ids);
-        }
-    }
-
-    async function handleAddTags(names: string[]) {
-        if (!onAddTags) return;
-        const ids = Array.from(selected);
-        await onAddTags(ids, names);
-        setSelected(new Set());
-        setAddInput('');
-
-        // Nếu đang ở WITHOUT #tag và trong names có đúng focusTag → loại khỏi list ngay
-        if (focusTag && allowToggleWithWithout && viewWithout) {
-            const hasFocus = names.map(stripHashLower).includes(stripHashLower(focusTag.name));
-            if (hasFocus) dropIds(ids);
+        if (!ids.length) return;
+        setActionBusy(true);
+        try {
+            await onConfirm(ids);
+            if (focusTag && allowToggleWithWithout && !viewWithout) {
+                dropIds(ids);
+            }
+            setNotice({ type: 'success', msg: 'Done.' });
+        } catch (e: any) {
+            setNotice({ type: 'error', msg: e?.message || 'Action failed' });
+        } finally {
+            setActionBusy(false);
         }
     }
 
@@ -196,44 +233,67 @@ export default function SelectContactsModal({
         if (!focusTag || !onAddToFocusTag) return;
         const ids = Array.from(selected);
         if (ids.length === 0) return;
-        await onAddToFocusTag(ids, focusTag);
-        setSelected(new Set());
-        // Đang ở WITHOUT #tag → các contact vừa add sẽ không còn xuất hiện
-        if (allowToggleWithWithout && viewWithout) {
-            dropIds(ids);
+
+        setActionBusy(true);
+        try {
+            await onAddToFocusTag(ids, focusTag);
+            setSelected(new Set());
+            if (allowToggleWithWithout && viewWithout) {
+                dropIds(ids);
+            }
+            setNotice({ type: 'success', msg: `Added to #${focusTag.name}` });
+        } catch (e: any) {
+            setNotice({ type: 'error', msg: e?.message || 'Failed' });
+        } finally {
+            setActionBusy(false);
         }
     }
 
     if (!open) return null;
 
+    const disableAll = loading || actionBusy;
+
     return (
         <div className="fixed inset-0 z-50">
-            {/* backdrop */}
-            <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-            {/* modal cố định kích thước, body có scroll */}
+            {/* backdrop (chặn đóng khi đang chạy action/fetch) */}
+            <div
+                className={`absolute inset-0 bg-black/30 ${disableAll ? 'cursor-wait' : ''}`}
+                onClick={() => {
+                    if (!disableAll) onClose();
+                }}
+            />
+
+            {/* modal */}
             <div className="absolute inset-0 grid place-items-center p-4">
-                <div className="w-full max-w-[1100px] rounded-2xl bg-white shadow-xl flex h-[78vh] min-h-[560px] max-h-[78vh] flex-col overflow-hidden">
-                    {/* ================= Header (fixed) ================= */}
+                <div className="relative w-full max-w-[1100px] rounded-2xl bg-white shadow-xl flex h-[78vh] min-h-[560px] max-h-[78vh] flex-col overflow-hidden">
+                    {/* Top loading bar */}
+                    {(loading || actionBusy) && (
+                        <div className="absolute left-0 top-0 h-1 w-full overflow-hidden">
+                            <div className="h-full w-1/3 animate-[loading_1.2s_linear_infinite] bg-slate-900" />
+                        </div>
+                    )}
+
+                    {/* Header */}
                     <div className="flex items-center justify-between border-b px-4 py-3">
                         <h3 className="text-base font-semibold">{title}</h3>
 
                         {focusTag && allowToggleWithWithout && (
                             <div className="flex items-center gap-2">
                                 <button
-                                    disabled={loading}
+                                    disabled={disableAll}
                                     className={`rounded-full px-3 py-1 text-sm ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${!viewWithout
-                                        ? 'bg-slate-900 text-white ring-slate-900'
-                                        : 'bg-white text-slate-700 ring-slate-300'
+                                            ? 'bg-slate-900 text-white ring-slate-900'
+                                            : 'bg-white text-slate-700 ring-slate-300'
                                         }`}
                                     onClick={() => setViewWithout(false)}
                                 >
                                     With #{focusTag.name}
                                 </button>
                                 <button
-                                    disabled={loading}
+                                    disabled={disableAll}
                                     className={`rounded-full px-3 py-1 text-sm ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${viewWithout
-                                        ? 'bg-slate-900 text-white ring-slate-900'
-                                        : 'bg-white text-slate-700 ring-slate-300'
+                                            ? 'bg-slate-900 text-white ring-slate-900'
+                                            : 'bg-white text-slate-700 ring-slate-300'
                                         }`}
                                     onClick={() => setViewWithout(true)}
                                 >
@@ -243,14 +303,16 @@ export default function SelectContactsModal({
                         )}
 
                         <button
-                            onClick={onClose}
-                            className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100"
+                            onClick={() => !disableAll && onClose()}
+                            disabled={disableAll}
+                            className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={disableAll ? 'Please wait…' : 'Close'}
                         >
                             ✕
                         </button>
                     </div>
 
-                    {/* ================= Toolbar (fixed) ================= */}
+                    {/* Toolbar */}
                     <div className="flex items-center gap-3 border-b px-4 py-2 text-sm">
                         <span className="text-slate-500">Filter:</span>
                         <div className="relative w-[260px]">
@@ -261,7 +323,8 @@ export default function SelectContactsModal({
                                     setQ(e.target.value);
                                 }}
                                 placeholder="q: (none)"
-                                className="w-full rounded-md border bg-white px-3 py-1.5 pl-8 outline-none"
+                                className="w-full rounded-md border bg-white px-3 py-1.5 pl-8 outline-none disabled:opacity-50"
+                                disabled={disableAll}
                             />
                             <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
                                 🔎
@@ -275,19 +338,23 @@ export default function SelectContactsModal({
                                 setSort(e.target.value as any);
                                 setPage(1);
                             }}
-                            className="rounded-md border bg-white px-2 py-1"
+                            className="rounded-md border bg-white px-2 py-1 disabled:opacity-50"
+                            disabled={disableAll}
                         >
                             <option value="name">name</option>
                             <option value="-name">-name</option>
                             <option value="-id">-id</option>
                             <option value="id">id</option>
                         </select>
+
+                        {err && (
+                            <span className="ml-auto rounded-md bg-rose-50 px-2 py-1 text-rose-700">{err}</span>
+                        )}
                     </div>
 
-                    {/* ================= Body (scroll ONLY here) ================= */}
+                    {/* Body */}
                     <div className="min-h-0 flex-1 overflow-y-auto px-4">
                         <div className="mx-auto my-3 w-full rounded-xl border">
-                            {/* table header sticky inside scroll */}
                             <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_1fr_1fr] items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
                                 <div className="flex items-center">
                                     <input
@@ -325,7 +392,7 @@ export default function SelectContactsModal({
                                                 <div>
                                                     <input
                                                         type="checkbox"
-                                                        disabled={loading}
+                                                        disabled={disableAll}
                                                         className="disabled:opacity-50 disabled:cursor-not-allowed"
                                                         checked={checked}
                                                         onChange={(e) => toggleOne(c.id, e.target.checked)}
@@ -350,16 +417,16 @@ export default function SelectContactsModal({
                         </div>
                     </div>
 
-                    {/* ================= Footer (fixed) ================= */}
+                    {/* Footer */}
                     <div
                         className="flex flex-col gap-2 border-t bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
                         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                     >
-                        {/* left: pager */}
+                        {/* pager */}
                         <div className="order-2 flex items-center gap-2 sm:order-1">
                             <button
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={loading || page <= 1}
+                                disabled={disableAll || page <= 1}
                                 className="rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 «
@@ -369,7 +436,7 @@ export default function SelectContactsModal({
                             </span>
                             <button
                                 onClick={() => setPage((p) => Math.min(data.last || 1, p + 1))}
-                                disabled={loading || page >= data.last}
+                                disabled={disableAll || page >= data.last}
                                 className="rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 »
@@ -380,7 +447,7 @@ export default function SelectContactsModal({
                             </span>
                             <button
                                 onClick={() => toggleAllCurrentPage(true)}
-                                disabled={loading || !pageIds.length}
+                                disabled={disableAll || !pageIds.length}
                                 className="ml-2 rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Select this page"
                             >
@@ -388,72 +455,61 @@ export default function SelectContactsModal({
                             </button>
                             <button
                                 onClick={() => setSelected(new Set())}
-                                disabled={loading || selected.size === 0}
+                                disabled={disableAll || selected.size === 0}
                                 className="rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Clear selected
                             </button>
                         </div>
 
-                        {/* right: actions */}
+                        {/* actions (KHÔNG thêm nút mới) */}
                         <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:flex-row sm:items-center">
                             {focusTag && allowToggleWithWithout && viewWithout && onAddToFocusTag && (
                                 <button
                                     onClick={handleAddToFocusTag}
-                                    disabled={loading || selected.size === 0}
+                                    disabled={disableAll || selected.size === 0}
                                     className="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Add selected to #{focusTag.name}
+                                    {actionBusy ? 'Adding…' : `Add selected to #${focusTag.name}`}
                                 </button>
                             )}
 
-                            {/* {canAddTags && onAddTags && (
-                                <>
-                                    <input
-                                        value={addInput}
-                                        onChange={(e) => setAddInput(e.target.value)}
-                                        placeholder="Add tag(s): torot, vip"
-                                        className="w-[260px] rounded-md border px-3 py-2 text-sm"
-                                        disabled={loading}
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            const names = addInput
-                                                .split(',')
-                                                .map((s) => s.trim())
-                                                .filter(Boolean);
-                                            if (!names.length) return;
-                                            handleAddTags(names);
-                                        }}
-                                        disabled={loading || selected.size === 0 || !addInput.trim()}
-                                        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Add tag(s) to selected
-                                    </button>
-                                </>
-                            )} */}
-
-                            {/* Chỉ cho phép REMOVE khi không ở tab Without #tag */}
                             {onConfirm && !(focusTag && allowToggleWithWithout && viewWithout) && (
                                 <button
                                     onClick={handleConfirm}
-                                    disabled={loading || selected.size === 0}
+                                    disabled={disableAll || selected.size === 0}
                                     className="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {confirmLabel}
+                                    {actionBusy ? 'Processing…' : confirmLabel}
                                 </button>
                             )}
-
                         </div>
                     </div>
 
-                    {err && (
-                        <div className="mx-4 mb-3 rounded-md bg-rose-50 p-2 text-sm text-rose-700">
-                            {err}
+                    {/* Floating notice (không có nút) */}
+                    {notice && (
+                        <div className="pointer-events-none absolute bottom-3 right-3">
+                            <div
+                                className={`pointer-events-auto rounded-lg px-3 py-2 text-sm shadow ${notice.type === 'success'
+                                        ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
+                                        : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                                    }`}
+                            >
+                                {notice.msg}
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* keyframes for loading bar */}
+            <style>{`
+                @keyframes loading {
+                    0%   { transform: translateX(-120%); }
+                    50%  { transform: translateX(20%); }
+                    100% { transform: translateX(120%); }
+                }
+            `}</style>
         </div>
     );
 }

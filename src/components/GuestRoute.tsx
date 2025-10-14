@@ -17,22 +17,23 @@ export default function GuestRoute({ children }: { children?: React.ReactNode })
     const { token, verified, status } = useAppSelector((s) => s.auth);
     const fired = useRef(false);
 
-    // 🔒 KHÔNG gọi hook conditionally. Luôn gọi, nhưng guard bên trong.
     useEffect(() => {
-        if (!token) return;                          // khách → không gọi meThunk
-        if (verified === null && !fired.current) {   // đã có token nhưng chưa biết verified
+        if (!token) return;
+        if (verified === null && !fired.current) {
             fired.current = true;
             dispatch(meThunk());
         }
     }, [token, verified, dispatch]);
 
-    // === Render ===
-    // Chưa đăng nhập -> cho vào trang Auth
+    // 1) KHÔNG token -> cho vào trang khách
     if (!token) return <>{children}</>;
 
-    // Có token nhưng chưa biết verified -> tạm show loader
+    // đang load trạng thái
     if (verified === null || status === 'loading') return <MiniLoader />;
 
-    // Đã biết verified -> điều hướng phù hợp
-    return <Navigate to={verified ? '/dashboard' : '/verify-email'} replace />;
+    // Có token:
+    // - verified -> đá sang app
+    if (verified) return <Navigate to="/dashboard" replace />;
+    // - chưa verified -> đá sang verify
+    return <Navigate to="/verify-email" replace />;
 }

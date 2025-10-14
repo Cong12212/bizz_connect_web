@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppSelector } from '../utils/hooks';
 import AppNav from '../components/AppNav';
 import { pickApiBaseUrl } from '../lib/config';
@@ -15,11 +16,13 @@ import StatCard from '../components/home/StatCard';
 import QuickAction from '../components/home/QuickAction';
 
 export default function Dashboard() {
+    const navigate = useNavigate();
+
     const reduxToken = useAppSelector((s) => s.auth.token);
     const token =
         reduxToken || (typeof window !== 'undefined' ? localStorage.getItem('bc_token') || '' : '');
 
-    const apiBase = pickApiBaseUrl(); // đã cache
+    const apiBase = pickApiBaseUrl();
     const hasApi = !!apiBase;
 
     const [q, setQ] = useState('');
@@ -71,7 +74,6 @@ export default function Dashboard() {
 
     const handleCreated = (c: Contact) => {
         setItems((prev) => [c, ...prev.filter((x) => x.id !== c.id)].slice(0, 4));
-        // cần đồng bộ tuyệt đối -> void fetchList();
     };
 
     const handleUpdated = (updated: Contact) => {
@@ -102,15 +104,17 @@ export default function Dashboard() {
         URL.revokeObjectURL(url);
     }
 
+    const openContact = (id: number) => navigate(`/contacts/${id}`);
+
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
             {/* Mobile top bar */}
             <div className="sticky top-0 z-40 md:hidden">
-                <AppNav variant="mobile" onNewContact={() => setOpenNew(true)} />
+                <AppNav variant="mobile" />
             </div>
 
             {/* Desktop sidebar (fixed) */}
-            <AppNav variant="sidebar" onNewContact={() => setOpenNew(true)} />
+            <AppNav variant="sidebar" />
 
             {/* MAIN */}
             <main className="px-4 py-6 md:ml-64 md:px-8">
@@ -140,8 +144,21 @@ export default function Dashboard() {
 
                 {/* Hàng thống kê */}
                 <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <StatCard icon={<span>👥</span>} label="Contacts" value={totalContacts} hint="Recently added show below" />
-                    <StatCard icon={<span>🏢</span>} label="Companies" value={companyCount} hint="Unique organizations" />
+                    {/* Ô Contacts → click để đi tới /contacts */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/contacts')}
+                        className="text-left"
+                        title="View all contacts"
+                    >
+                        <StatCard
+                            icon={<span>👥</span>}
+                            label="Contacts"
+                            value={totalContacts}
+                            hint="Click to view all contacts"
+                        />
+                    </button>
+
                     <StatCard icon={<span>⏰</span>} label="Reminders due" value={0} hint="Connect your reminders" />
                 </div>
 
@@ -149,7 +166,19 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                     {/* LEFT */}
                     <div className="lg:col-span-8">
-                        <Section title="Recent contacts">
+                        {/* Tiêu đề + link View all */}
+                        <div className="mb-2 flex items-center justify-between">
+                            <h2 className="text-base font-semibold">Recent contacts</h2>
+                            <Link
+                                to="/contacts"
+                                className="text-sm text-sky-600 hover:underline"
+                                title="Go to all contacts"
+                            >
+                                View all →
+                            </Link>
+                        </div>
+
+                        <Section title="">
                             {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
                             {hasApi && token ? (
@@ -162,7 +191,16 @@ export default function Dashboard() {
                                 ) : filtered.length ? (
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         {filtered.map((c) => (
-                                            <ContactCard key={c.id} c={c} token={token} onUpdated={handleUpdated} />
+                                            // Bọc ContactCard trong button để điều hướng khi click toàn bộ card
+                                            <button
+                                                key={c.id}
+                                                type="button"
+                                                onClick={() => openContact(c.id)}
+                                                className="text-left"
+                                                title={`Open ${c.name}`}
+                                            >
+                                                <ContactCard c={c} token={token} onUpdated={handleUpdated} />
+                                            </button>
                                         ))}
                                     </div>
                                 ) : (
@@ -172,20 +210,6 @@ export default function Dashboard() {
                         </Section>
                     </div>
 
-                    {/* RIGHT */}
-                    <div className="lg:col-span-4">
-                        <Section title="Quick actions">
-                            <div className="grid grid-cols-1 gap-3">
-                                <QuickAction
-                                    icon={<span>📷</span>}
-                                    label="Scan business card (mobile)"
-                                    onClick={() => alert('Open mobile scanner')}
-                                />
-                                <QuickAction icon={<span>➕</span>} label="Add new contact" onClick={() => setOpenNew(true)} />
-                                <QuickAction icon={<span>⬇️</span>} label="Export CSV" onClick={exportCSV} />
-                            </div>
-                        </Section>
-                    </div>
                 </div>
             </main>
 

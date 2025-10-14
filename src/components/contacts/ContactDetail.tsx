@@ -67,13 +67,13 @@ export default function ContactDetail({
                 </div>
             ) : (
                 <div className="rounded-xl border bg-white p-6 text-center text-slate-500">
-                    Liên hệ này chưa có thông tin chi tiết. Nhấn Edit để bổ sung.
+                    This contact has no detailed information yet. Click Edit to add more.
                 </div>
             )}
 
             {missing.length ? (
                 <div className="mt-8 rounded-xl border bg-slate-50 p-4 text-sm text-slate-600">
-                    <div className="mb-2 font-medium">Trường còn thiếu</div>
+                    <div className="mb-2 font-medium">Missing fields</div>
                     <div className="flex flex-wrap gap-2">
                         {missing.map((m) => (
                             <span key={String(m.key)} className="rounded-full border bg-white px-3 py-1">{m.label}</span>

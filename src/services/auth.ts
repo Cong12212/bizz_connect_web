@@ -57,9 +57,6 @@ export async function updateMe(payload: Partial<Pick<Me, "name" | "email">> & { 
     return data as Me;
 }
 
-export async function logout(): Promise<void> {
-    await api.post("/auth/logout");
-}
 
 /** ====== Password reset flow ====== */
 export async function requestPasswordReset(email: string, newPassword: string) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import AppNav from "../components/AppNav";
 import useDebounced from "../hooks/useDebounced";
 import { useAppSelector } from "../utils/hooks";
@@ -19,6 +20,10 @@ import ImportContactsModal from "../components/contacts/ImportContactsModal";
 import ExportContactsModal from "../components/contacts/ExportContactsModal";
 
 export default function ContactsPage() {
+    const nav = useNavigate();
+    const { id: idParam } = useParams();            // /contacts/:id
+    const routeId = idParam ? parseInt(idParam, 10) : null;
+
     const reduxToken = useAppSelector((s) => s.auth.token);
     const token =
         reduxToken ||
@@ -30,22 +35,28 @@ export default function ContactsPage() {
     const [per] = useState(30);
     const [sort, setSort] = useState<"name" | "-name" | "id" | "-id">("name");
 
-    const [data, setData] = useState<{ items: Contact[]; total: number; last: number }>(
-        { items: [], total: 0, last: 1 }
-    );
+    const [data, setData] = useState<{ items: Contact[]; total: number; last: number }>({
+        items: [],
+        total: 0,
+        last: 1,
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const selectedId = routeId;
     const [selected, setSelected] = useState<Contact | null>(null);
 
-    const [openEdit, setOpenEdit] = useState(false);
+    // TÁCH đối tượng đang chỉnh: null => tạo mới; object => sửa
+    const [editTarget, setEditTarget] = useState<Contact | null>(null);
+
     const isMobile = useMediaQuery("(max-width: 767.98px)");
     const [openDetailMobile, setOpenDetailMobile] = useState(false);
 
     const [openImport, setOpenImport] = useState(false);
     const [openExport, setOpenExport] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false);
 
+    // load list
     useEffect(() => {
         let active = true;
         setLoading(true);
@@ -54,10 +65,9 @@ export default function ContactsPage() {
             .then((res) => {
                 if (!active) return;
                 setData({ items: res.data, total: res.total, last: res.last_page });
-
                 if (selectedId) {
                     const found = res.data.find((c) => c.id === selectedId) || null;
-                    if (found) setSelected(found);
+                    if (found) setSelected((prev) => (prev?.id === found.id ? prev : found));
                 }
             })
             .catch((e) => setError(e?.message || "Failed to load"))
@@ -65,34 +75,43 @@ export default function ContactsPage() {
         return () => {
             active = false;
         };
-    }, [qDebounced, page, per, sort, token]);
+    }, [qDebounced, page, per, sort, token, selectedId]);
 
-    // fetch full when chọn
+    // fetch full khi chọn item khác
     useEffect(() => {
-        if (!selectedId) return;
+        if (!selectedId) {
+            setSelected(null);
+            setOpenDetailMobile(false);
+            return;
+        }
         getContact(selectedId, token)
             .then((full) => setSelected(full))
             .catch(() => {
                 const fallback = data.items.find((x) => x.id === selectedId) || null;
                 setSelected(fallback);
             });
+
+        if (isMobile) setOpenDetailMobile(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedId]);
+    }, [selectedId, token]);
 
     const list = useMemo(() => data.items, [data.items]);
 
     return (
         <div className="h-[100svh] overflow-hidden bg-slate-50 text-slate-900">
+            {/* Mobile top */}
             <div className="sticky top-0 z-40 md:hidden">
-                <AppNav variant="mobile" onNewContact={() => setOpenEdit(true)} />
+                <AppNav variant="mobile" />
             </div>
-            <AppNav variant="sidebar" onNewContact={() => setOpenEdit(true)} />
+            {/* Sidebar */}
+            <AppNav variant="sidebar" />
 
-            {/* cột dọc: toolbar cố định + content scroll */}
+            {/* MAIN */}
             <main className="md:ml-64 flex h-screen flex-col overflow-hidden">
                 {/* Toolbar */}
                 <div className="flex-none flex items-center gap-3 border-b bg-white/70 p-3 backdrop-blur supports-[backdrop-filter]:bg-white/40">
                     <h1 className="hidden text-lg font-semibold sm:block">Contacts</h1>
+
                     <div className="relative w-[min(520px,80vw)]">
                         <input
                             value={q}
@@ -107,6 +126,7 @@ export default function ContactsPage() {
                             🔎
                         </span>
                     </div>
+
                     <select
                         value={sort}
                         onChange={(e) => setSort(e.target.value as any)}
@@ -118,24 +138,16 @@ export default function ContactsPage() {
                         <option value="id">Oldest</option>
                     </select>
 
-                    {/* Export/Import */}
-                    <button
-                        onClick={() => setOpenExport(true)}
-                        className="rounded-xl border px-3 py-2"
-                    >
+                    <button onClick={() => setOpenExport(true)} className="rounded-xl border px-3 py-2">
                         Export
                     </button>
-
-                    <button
-                        onClick={() => setOpenImport(true)}
-                        className="rounded-xl border px-3 py-2"
-                    >
+                    <button onClick={() => setOpenImport(true)} className="rounded-xl border px-3 py-2">
                         Import
                     </button>
 
                     <button
                         onClick={() => {
-                            setSelected(null);
+                            setEditTarget(null);   // ➜ tạo mới
                             setOpenEdit(true);
                         }}
                         className="ml-auto rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
@@ -149,9 +161,7 @@ export default function ContactsPage() {
                     {/* LEFT: list */}
                     <section className="min-h-0 overflow-hidden border-r bg-white">
                         {error && (
-                            <div className="m-3 rounded-md bg-red-50 p-3 text-sm text-red-600">
-                                {error}
-                            </div>
+                            <div className="m-3 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>
                         )}
                         <ContactList
                             items={list}
@@ -161,33 +171,25 @@ export default function ContactsPage() {
                             loading={loading}
                             onPage={setPage}
                             selectedId={selectedId}
-                            onSelect={(id) => {
-                                const found = list.find((x) => x.id === id);
-                                if (found) setSelected(found);
-                                setSelectedId(id);
-                                if (isMobile) setOpenDetailMobile(true);
-                            }}
+                            onSelect={(id) => nav(`/contacts/${id}`)}        // dùng router
                             onDelete={async (id) => {
                                 if (!confirm("Delete this contact?")) return;
                                 await deleteContact(id, token);
-                                setData((d) => ({
-                                    ...d,
-                                    items: d.items.filter((x) => x.id !== id),
-                                }));
-                                if (selectedId === id) {
-                                    setSelectedId(null);
-                                    setSelected(null);
-                                }
+                                setData((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
+                                if (selectedId === id) nav("/contacts");
                             }}
                         />
                     </section>
 
-                    {/* RIGHT: detail (desktop only) */}
+                    {/* RIGHT: detail (desktop) */}
                     <section className="hidden overflow-y-auto p-6 md:block">
                         {selected ? (
                             <ContactDetail
                                 contact={selected}
-                                onEdit={() => setOpenEdit(true)}
+                                onEdit={() => {
+                                    setEditTarget(selected);
+                                    setOpenEdit(true);
+                                }}
                                 onUpdated={(c) => {
                                     setSelected(c);
                                     setData((d) => ({
@@ -201,9 +203,9 @@ export default function ContactsPage() {
                                 <div>
                                     <div className="mb-2 text-4xl">👤</div>
                                     <div className="text-lg font-medium">
-                                        Chọn 1 liên hệ ở bên trái để xem chi tiết
+                                        Select a contact on the left to view details
                                     </div>
-                                    <div className="text-sm">Hoặc tạo liên hệ mới</div>
+                                    <div className="text-sm">Or create a new contact</div>
                                 </div>
                             </div>
                         )}
@@ -211,13 +213,17 @@ export default function ContactsPage() {
                 </div>
             </main>
 
-            {/* Modal detail cho mobile */}
+            {/* Detail modal (mobile) */}
             <ContactDetailModal
                 open={openDetailMobile}
                 contact={selected}
-                onClose={() => setOpenDetailMobile(false)}
+                onClose={() => {
+                    setOpenDetailMobile(false);
+                    nav("/contacts");
+                }}
                 onEdit={() => {
                     setOpenDetailMobile(false);
+                    setEditTarget(selected);
                     setOpenEdit(true);
                 }}
                 onUpdated={(c) => {
@@ -229,16 +235,16 @@ export default function ContactsPage() {
                 }}
             />
 
-            {/* Create / Edit sheet */}
+            {/* Create / Edit */}
             <EditContactSheet
                 open={openEdit}
                 onClose={() => setOpenEdit(false)}
                 token={token}
-                contact={selected}
+                contact={editTarget}                    // null => new, object => edit
                 onSaved={(c) => {
                     setOpenEdit(false);
                     setSelected(c);
-                    setSelectedId(c.id);
+                    nav(`/contacts/${c.id}`);
                     setData((d) => {
                         const exists = d.items.some((x) => x.id === c.id);
                         return exists
@@ -248,23 +254,17 @@ export default function ContactsPage() {
                 }}
             />
 
-            {/* Import modal */}
+            {/* Import / Export */}
             <ImportContactsModal
                 open={openImport}
                 onClose={() => setOpenImport(false)}
                 token={token}
-                onDone={() => {
-                    // reload list sau khi import
-                    setPage(1);
-                }}
+                onDone={() => setPage(1)}
             />
-
-            {/* Export modal */}
             <ExportContactsModal
                 open={openExport}
                 onClose={() => setOpenExport(false)}
                 token={token}
-                // dùng qDebounced để khớp với list đang hiển thị
                 filters={{ q: qDebounced, sort }}
             />
         </div>

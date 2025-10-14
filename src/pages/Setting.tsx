@@ -3,14 +3,17 @@
 
 import React, { useEffect, useState } from "react";
 import AppNav from "@/components/AppNav";
-import { useAppSelector } from "@/utils/hooks";
-import { getMe, updateMe, logout, type Me } from "@/services/auth";
+import { useAppSelector, useAppDispatch } from "@/utils/hooks";
+import { getMe, updateMe, type Me } from "@/services/auth";
 import { useNavigate } from "react-router-dom";
+import api, { setAuthToken } from "@/services/api";
+import { logout } from "@/features/auth/authSlice";
+
 
 export default function SettingsPage() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
 
-    // vẫn lấy token nếu bạn muốn dùng chỗ khác, nhưng services không cần truyền vào
     const reduxToken = useAppSelector((s) => s.auth.token);
     const token =
         reduxToken || (typeof window !== "undefined" ? localStorage.getItem("bc_token") || "" : "");
@@ -37,9 +40,7 @@ export default function SettingsPage() {
             })
             .catch((e) => setErr(e?.message || "Failed to load user"))
             .finally(() => setLoading(false));
-        return () => {
-            alive = false;
-        };
+        return () => { alive = false; };
     }, [token]);
 
     async function onSave(e: React.FormEvent) {
@@ -63,15 +64,16 @@ export default function SettingsPage() {
     }
 
     async function onLogout() {
-        try {
-            await logout();
-        } catch {
-
-        }
-
+        try { await logout(); } catch { }
+        // 1) Xoá token lưu trữ
         if (typeof window !== "undefined") localStorage.removeItem("bc_token");
-
+        // 2) Xoá header Authorization của axios
+        setAuthToken(''); // hoặc: delete api.defaults.headers.common['Authorization']
+        // 3) Xoá token/verified trong Redux
+        dispatch(logout());
+        // 4) Điều hướng (fallback hard reload nếu cần)
         navigate("/auth", { replace: true });
+        // window.location.replace('/auth'); // nếu muốn chắc chắn
     }
 
     return (
@@ -80,7 +82,6 @@ export default function SettingsPage() {
                 <AppNav variant="mobile" />
             </div>
             <AppNav variant="sidebar" />
-
             <main className="md:ml-64 h-screen overflow-y-auto p-4">
                 <div className="mx-auto max-w-3xl">
                     <h1 className="mb-4 text-lg font-semibold">Settings</h1>
