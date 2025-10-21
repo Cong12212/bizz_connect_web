@@ -1,7 +1,7 @@
 // src/components/contacts/EditContactSheet.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Contact } from '../../services/contacts';
 import { createContact, updateContact } from '../../services/contacts';
 import { Spinner, useToast } from '../ui/Toast';
