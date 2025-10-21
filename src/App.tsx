@@ -10,7 +10,7 @@ import ResetVerify from './pages/ResetVerify';
 import ContactsPage from './pages/Contacts';
 import TagsPage from './pages/Tags';
 import RemindersPage from './pages/Reminders';
-import NotificationsPage from './pages/notifications';
+import NotificationsPage from './pages/Notifications';
 import SettingsPage from './pages/Setting';
 import VerifyOnlyRoute from './components/VerifyOnlyRoute';
 
