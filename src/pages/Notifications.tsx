@@ -64,9 +64,7 @@ export default function NotificationsPage() {
             })
             .catch((e) => setErr(e?.message || 'Failed to load notifications'))
             .finally(() => setLoading(false));
-        return () => {
-            alive = false;
-        };
+        return () => { alive = false; };
     }, [scope, token, refreshKey]);
 
     // selection helpers
@@ -130,14 +128,12 @@ export default function NotificationsPage() {
             </div>
             <AppNav variant="sidebar" />
 
-            {/* Page uses full height; inner content is a column, list area scrolls */}
             <main className="md:ml-64 h-screen overflow-hidden p-4">
                 <div className="mx-auto max-w-5xl h-full flex flex-col">
-                    {/* Header / Toolbar (fixed height) */}
+                    {/* Header */}
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                         <h1 className="text-lg font-semibold">Notifications</h1>
 
-                        {/* scope filters */}
                         <div className="ml-2 flex items-center gap-2 rounded-xl border bg-white p-1 text-sm">
                             {(['all', 'unread', 'upcoming', 'past'] as Scope[]).map((s) => (
                                 <button
@@ -161,9 +157,9 @@ export default function NotificationsPage() {
 
                     {err && <div className="mb-2 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>}
 
-                    {/* Card: make list area scrollable */}
+                    {/* Card: list area scrollable */}
                     <div className="overflow-hidden rounded-xl border bg-white flex min-h-0 flex-col">
-                        {/* Sticky table header (sticks within this card when list scrolls) */}
+                        {/* Sticky header */}
                         <div className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 sticky top-0 z-10">
                             <div className="flex items-center">
                                 <input
@@ -184,7 +180,7 @@ export default function NotificationsPage() {
                             <div>Actions</div>
                         </div>
 
-                        {/* Scrollable list area */}
+                        {/* Scroll area */}
                         <div className="min-h-0 flex-1 overflow-y-auto">
                             {loading ? (
                                 <div className="p-3">
@@ -202,7 +198,10 @@ export default function NotificationsPage() {
                                         return (
                                             <li
                                                 key={n.id}
-                                                className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 px-3 py-2 hover:bg-slate-50"
+                                                className={`grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 px-3 py-2 transition-colors ${unread
+                                                    ? 'bg-slate-100 hover:bg-slate-200'
+                                                    : 'bg-white hover:bg-slate-50'
+                                                    }`}
                                             >
                                                 <div>
                                                     <input
@@ -214,7 +213,7 @@ export default function NotificationsPage() {
                                                     />
                                                 </div>
 
-                                                {/* Clickable → mark read (nếu cần) rồi navigate */}
+                                                {/* Clickable → open; unread có chấm xanh + title đậm hơn nhẹ */}
                                                 <button
                                                     className="min-w-0 text-left"
                                                     onClick={() => openNotification(n)}
@@ -223,7 +222,7 @@ export default function NotificationsPage() {
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-lg leading-none">{emoji}</span>
                                                         <div className="min-w-0 flex-1">
-                                                            <div className="truncate text-sm font-medium">
+                                                            <div className={`truncate text-sm ${unread ? 'font-semibold' : 'font-medium'}`}>
                                                                 {n.title}{' '}
                                                                 {unread && (
                                                                     <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sky-500 align-middle" />
@@ -270,7 +269,7 @@ export default function NotificationsPage() {
                             )}
                         </div>
 
-                        {/* Footer actions (stays fixed while list scrolls) */}
+                        {/* Footer actions */}
                         <div className="flex flex-col gap-2 border-t p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                             <div className="order-2 flex items-center gap-2 sm:order-1">
                                 <span>
@@ -305,7 +304,6 @@ export default function NotificationsPage() {
                         </div>
                     </div>
 
-                    {/* hint */}
                     <div className="mt-3 text-xs text-slate-500">
                         Read-only: you can mark as read and open details. Backend shows up to 20 latest; DB retains 50 per user.
                     </div>
