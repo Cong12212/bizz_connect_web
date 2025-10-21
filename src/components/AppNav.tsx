@@ -1,6 +1,6 @@
 // src/components/AppNav.tsx
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home as HomeIcon, Users, Bell, Tag, ChartBar, Menu, Settings, Plus } from "lucide-react";
+import { Home as HomeIcon, Users, Bell, Tag, ChartBar, Menu, Settings } from "lucide-react";
 import React from "react";
 
 type Props = {

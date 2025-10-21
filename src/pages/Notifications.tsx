@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AppNav from '../components/AppNav';
 import { useAppSelector } from '../utils/hooks';
 import { useNavigate } from 'react-router-dom';

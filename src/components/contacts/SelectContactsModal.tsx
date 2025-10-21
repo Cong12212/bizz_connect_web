@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     listContacts,
     type Contact,
@@ -15,9 +15,7 @@ type Filters = {
     tag_mode?: 'any' | 'all';
 };
 
-function stripHashLower(s: string) {
-    return s.replace(/^#+/, '').trim().toLowerCase();
-}
+
 
 export default function SelectContactsModal({
     open,
@@ -27,8 +25,6 @@ export default function SelectContactsModal({
     title = 'Select contacts',
     confirmLabel = 'Confirm',
     onConfirm,
-    canAddTags,
-    onAddTags,
     focusTag,
     allowToggleWithWithout,
     onAddToFocusTag,
@@ -282,8 +278,8 @@ export default function SelectContactsModal({
                                 <button
                                     disabled={disableAll}
                                     className={`rounded-full px-3 py-1 text-sm ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${!viewWithout
-                                            ? 'bg-slate-900 text-white ring-slate-900'
-                                            : 'bg-white text-slate-700 ring-slate-300'
+                                        ? 'bg-slate-900 text-white ring-slate-900'
+                                        : 'bg-white text-slate-700 ring-slate-300'
                                         }`}
                                     onClick={() => setViewWithout(false)}
                                 >
@@ -292,8 +288,8 @@ export default function SelectContactsModal({
                                 <button
                                     disabled={disableAll}
                                     className={`rounded-full px-3 py-1 text-sm ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${viewWithout
-                                            ? 'bg-slate-900 text-white ring-slate-900'
-                                            : 'bg-white text-slate-700 ring-slate-300'
+                                        ? 'bg-slate-900 text-white ring-slate-900'
+                                        : 'bg-white text-slate-700 ring-slate-300'
                                         }`}
                                     onClick={() => setViewWithout(true)}
                                 >
@@ -491,8 +487,8 @@ export default function SelectContactsModal({
                         <div className="pointer-events-none absolute bottom-3 right-3">
                             <div
                                 className={`pointer-events-auto rounded-lg px-3 py-2 text-sm shadow ${notice.type === 'success'
-                                        ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
-                                        : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                                    ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
+                                    : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
                                     }`}
                             >
                                 {notice.msg}

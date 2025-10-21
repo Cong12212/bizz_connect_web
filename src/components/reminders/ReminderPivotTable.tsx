@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import type { ReminderEdge } from '@/services/reminders';
 
 export default function ReminderPivotTable({
@@ -60,12 +59,12 @@ export default function ReminderPivotTable({
                             <div className="truncate text-sm">{e.due_at ? new Date(e.due_at).toLocaleString() : '—'}</div>
                             <div className="text-xs">
                                 <span className={`inline-block rounded-full px-2 py-0.5 ${e.status === 'pending'
-                                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-                                        : e.status === 'done'
-                                            ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                                            : e.status === 'skipped'
-                                                ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
-                                                : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                                    ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                                    : e.status === 'done'
+                                        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                                        : e.status === 'skipped'
+                                            ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
+                                            : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
                                     }`}>{e.status}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">

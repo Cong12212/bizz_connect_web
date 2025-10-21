@@ -1,7 +1,7 @@
 // src/pages/Dashboard.tsx
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAppSelector } from '../utils/hooks';
 import AppNav from '../components/AppNav';
@@ -13,7 +13,7 @@ import EmptyState from '../components/EmptyState';
 import NewContactModal from '../components/contacts/NewContactModal';
 import Section from '../components/ui/Section';
 import StatCard from '../components/home/StatCard';
-import QuickAction from '../components/home/QuickAction';
+// import QuickAction from '../components/home/QuickAction';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -67,10 +67,10 @@ export default function Dashboard() {
         );
     }, [items, qDebounced]);
 
-    const companyCount = useMemo(() => {
-        const set = new Set(items.map((c) => (c.company || '').trim().toLowerCase()).filter(Boolean));
-        return set.size;
-    }, [items]);
+    // const companyCount = useMemo(() => {
+    //     const set = new Set(items.map((c) => (c.company || '').trim().toLowerCase()).filter(Boolean));
+    //     return set.size;
+    // }, [items]);
 
     const handleCreated = (c: Contact) => {
         setItems((prev) => [c, ...prev.filter((x) => x.id !== c.id)].slice(0, 4));
@@ -80,29 +80,29 @@ export default function Dashboard() {
         setItems((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
     };
 
-    function exportCSV() {
-        const rows = [
-            ['Name', 'Company', 'Email', 'Phone', 'Address', 'Notes'],
-            ...filtered.map((c) => [
-                c.name,
-                c.company || '',
-                c.email || '',
-                c.phone || '',
-                c.address || '',
-                (c.notes || '').replace(/\n/g, ' '),
-            ]),
-        ];
-        const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `contacts_${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
+    // function exportCSV() {
+    //     const rows = [
+    //         ['Name', 'Company', 'Email', 'Phone', 'Address', 'Notes'],
+    //         ...filtered.map((c) => [
+    //             c.name,
+    //             c.company || '',
+    //             c.email || '',
+    //             c.phone || '',
+    //             c.address || '',
+    //             (c.notes || '').replace(/\n/g, ' '),
+    //         ]),
+    //     ];
+    //     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    //     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    //     const url = URL.createObjectURL(blob);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = `contacts_${new Date().toISOString().slice(0, 10)}.csv`;
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    //     URL.revokeObjectURL(url);
+    // }
 
     const openContact = (id: number) => navigate(`/contacts/${id}`);
 

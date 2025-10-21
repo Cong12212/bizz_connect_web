@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import type { Reminder } from '@/services/reminders';
 
 export default function ReminderTable({
@@ -77,12 +76,12 @@ export default function ReminderTable({
                             <div className="text-xs">
                                 <span
                                     className={`inline-block rounded-full px-2 py-0.5 ${r.status === 'pending'
-                                            ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-                                            : r.status === 'done'
-                                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                                                : r.status === 'skipped'
-                                                    ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
-                                                    : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                                        : r.status === 'done'
+                                            ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                                            : r.status === 'skipped'
+                                                ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
+                                                : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
                                         }`}
                                 >
                                     {r.status}

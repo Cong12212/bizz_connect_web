@@ -2,7 +2,7 @@ import React from "react";
 import type { Contact } from "../../services/contacts";
 
 export default function ContactDetail({
-    contact, onEdit, onUpdated,
+    contact, onEdit,
 }: {
     contact: Contact;
     onEdit: () => void;

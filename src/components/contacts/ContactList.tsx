@@ -1,5 +1,4 @@
 // src/components/contacts/ContactList.tsx
-import React from "react";
 import type { Contact } from "../../services/contacts";
 import EmptyState from "../EmptyState";
 

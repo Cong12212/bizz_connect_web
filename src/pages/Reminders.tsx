@@ -83,7 +83,7 @@ export default function RemindersPage() {
 
     // filters
     const [status, setStatus] = useState<'' | ReminderStatus>('');
-    const [overdue, setOverdue] = useState(false);
+    const [overdue] = useState(false);
     const [from, setFrom] = useState('');
     const [to, setTo] = useState('');
     const [contactId, setContactId] = useState<number | undefined>(undefined);

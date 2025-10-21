@@ -6,7 +6,7 @@ import AppNav from "@/components/AppNav";
 import { useAppSelector, useAppDispatch } from "@/utils/hooks";
 import { getMe, updateMe, type Me } from "@/services/auth";
 import { useNavigate } from "react-router-dom";
-import api, { setAuthToken } from "@/services/api";
+import { setAuthToken } from "@/services/api";
 import { logout } from "@/features/auth/authSlice";
 
 

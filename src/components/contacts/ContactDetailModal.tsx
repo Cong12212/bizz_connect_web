@@ -1,6 +1,5 @@
 'use client';
 
-import React from "react";
 import type { Contact } from "../../services/contacts";
 import ContactDetail from "./ContactDetail";
 
