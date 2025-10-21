@@ -27,6 +27,16 @@ export default function ReminderTable({
     onDelete: (id: number) => void;
     contactLabel: (cid?: number | null) => string;
 }) {
+
+    function formatUTCAsIs(isoString: string): string {
+        // Parse UTC string WITHOUT timezone conversion
+        const match = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+        if (!match) return isoString;
+
+        const [, year, month, day, hour, minute] = match;
+        return `${day}/${month}/${year}, ${hour}:${minute}`;
+    }
+
     return (
         <div className="overflow-hidden rounded-xl border bg-white">
             <div className="grid grid-cols-[40px_1.1fr_1fr_1fr_150px_150px] border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
@@ -43,7 +53,7 @@ export default function ReminderTable({
                         onChange={(e) => onToggleAll(e.target.checked)}
                     />
                 </div>
-                <div>Title</div>
+                <div>Title dmmm</div>
                 <div>Contact</div>
                 <div>Due at</div>
                 <div>Status</div>
@@ -72,7 +82,30 @@ export default function ReminderTable({
                                 <div className="truncate text-xs text-slate-500">{r.note || '—'}</div>
                             </div>
                             <div className="truncate text-sm">{contactLabel(r.contact_id)}</div>
-                            <div className="truncate text-sm">{r.due_at ? new Date(r.due_at).toLocaleString() : '—'}</div>
+                            <div className="min-w-0">
+                                {r.due_at ? (() => {
+                                    // Debug: Log ra xem due_at là gì
+                                    console.log('Original due_at:', r.due_at);
+                                    console.log('Type:', typeof r.due_at);
+
+                                    const match = String(r.due_at).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+                                    console.log('Match result:', match);
+
+                                    if (!match) return String(r.due_at);
+
+                                    const [, year, month, day, hour, minute] = match;
+                                    const formatted = `${day}/${month}/${year}, ${hour}:${minute}`;
+                                    console.log('Formatted:', formatted);
+
+                                    return (
+                                        <div className="truncate">
+                                            <div className="text-sm font-medium">
+                                                {formatted}
+                                            </div>
+                                        </div>
+                                    );
+                                })() : '—'}
+                            </div>
                             <div className="text-xs">
                                 <span
                                     className={`inline-block rounded-full px-2 py-0.5 ${r.status === 'pending'

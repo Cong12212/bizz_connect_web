@@ -15,6 +15,17 @@ import {
 import { attachTags, detachTag } from '../services/contacts';
 import SelectContactsModal from '../components/contacts/SelectContactsModal';
 import { useToast, Spinner } from '../components/ui/Toast';
+import {
+    Search,
+    Hash,
+    Plus,
+    Edit2,
+    Trash2,
+    Users,
+    X,
+    Check,
+    Tag as TagIcon,
+} from 'lucide-react';
 
 /* -------------------------------- Types -------------------------------- */
 type RemoveModalState = { open: false } | { open: true; tag: Tag };
@@ -59,8 +70,14 @@ export default function TagsPage() {
                 if (!active) return;
                 setData({ items: res.data, total: res.total, last: res.last_page });
             })
-            .catch((e) => setErr(e?.message || 'Failed to load tags'))
-            .finally(() => setLoading(false));
+            .catch((e) => {
+                if (!active) return;
+                setErr(e?.message || 'Failed to load tags');
+                toast.error(e?.message || 'Failed to load tags');
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
         return () => {
             active = false;
         };
@@ -90,40 +107,43 @@ export default function TagsPage() {
             <AppNav variant="sidebar" />
 
             <main className="md:ml-64 h-screen overflow-hidden p-4">
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto max-w-5xl">
                     {/* Header */}
-                    <div className="mb-3 flex items-center gap-3">
-                        <h1 className="text-lg font-semibold">Tags</h1>
-
-                        <div className="relative w-[min(420px,70vw)]">
-                            <input
-                                value={q}
-                                onChange={(e) => {
-                                    setPage(1);
-                                    setQ(e.target.value);
-                                }}
-                                placeholder="Search tags..."
-                                className="w-full rounded-xl border bg-white px-4 py-2 pl-10 outline-none focus:ring-2 focus:ring-slate-300"
-                            />
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                🔎
-                            </span>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h1 className="text-2xl font-bold">Tags</h1>
+                            <p className="text-sm text-slate-600">
+                                {data.total} total
+                            </p>
                         </div>
 
                         <button
                             onClick={() => setCreateOpen(true)}
-                            className="ml-auto rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
+                            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                         >
-                            New tag
+                            <Plus className="h-4 w-4" />
+                            New Tag
                         </button>
                     </div>
 
-                    {err && <div className="mb-2 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>}
+                    {/* Search */}
+                    <div className="mb-3 relative max-w-md">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            value={q}
+                            onChange={(e) => {
+                                setPage(1);
+                                setQ(e.target.value);
+                            }}
+                            placeholder="Search tags..."
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pl-10 text-sm outline-none transition-all focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
+                        />
+                    </div>
 
                     {/* Table */}
-                    <div className="overflow-hidden rounded-xl border bg-white">
-                        <div className="grid grid-cols-[1fr_120px_200px] border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
-                            <div>Name</div>
+                    <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+                        <div className="grid grid-cols-[1fr_140px_220px] items-center gap-3 border-b bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600">
+                            <div>Tag Name</div>
                             <div>Contacts</div>
                             <div>Actions</div>
                         </div>
@@ -131,37 +151,47 @@ export default function TagsPage() {
                         {loading ? (
                             <div className="p-3">
                                 {Array.from({ length: 6 }).map((_, i) => (
-                                    <div key={i} className="mb-2 h-10 animate-pulse rounded-lg bg-slate-200" />
+                                    <div key={i} className="mb-2 h-12 animate-pulse rounded-lg bg-slate-200" />
                                 ))}
                             </div>
                         ) : data.items.length ? (
-                            <ul>
+                            <ul className="divide-y divide-slate-100">
                                 {data.items.map((t) => (
                                     <li
                                         key={t.id}
-                                        className="grid grid-cols-[1fr_120px_200px] items-center gap-2 px-3 py-2"
+                                        className="grid grid-cols-[1fr_140px_220px] items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
                                     >
-                                        <div className="truncate">#{t.name}</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                                                <Hash className="h-4 w-4" />
+                                            </div>
+                                            <span className="truncate font-medium">{t.name}</span>
+                                        </div>
+
                                         <div>
                                             <button
-                                                className="inline-flex min-w-[40px] items-center justify-center rounded-md border px-2 py-0.5 text-sm hover:bg-slate-50"
-                                                title="View & add/remove contacts for this tag"
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50"
+                                                title="View & manage contacts for this tag"
                                                 onClick={() => setRemoveModal({ open: true, tag: t })}
                                             >
+                                                <Users className="h-3.5 w-3.5" />
                                                 {t.contacts_count ?? 0}
                                             </button>
                                         </div>
-                                        <div className="flex gap-2">
+
+                                        <div className="flex items-center gap-1.5">
                                             <button
-                                                className="rounded-md border px-2 py-1 text-sm hover:bg-slate-50"
+                                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-all hover:bg-slate-50"
                                                 onClick={() => setRenameOpen({ open: true, tag: t })}
                                             >
+                                                <Edit2 className="h-3.5 w-3.5" />
                                                 Rename
                                             </button>
                                             <button
-                                                className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-sm text-rose-700 hover:bg-rose-100"
+                                                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition-all hover:bg-rose-100"
                                                 onClick={() => setDeleteOpen({ open: true, tag: t })}
                                             >
+                                                <Trash2 className="h-3.5 w-3.5" />
                                                 Delete
                                             </button>
                                         </div>
@@ -169,29 +199,39 @@ export default function TagsPage() {
                                 ))}
                             </ul>
                         ) : (
-                            <div className="p-6 text-center text-sm text-slate-500">No tags found</div>
+                            <div className="p-12 text-center">
+                                <TagIcon className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+                                <div className="text-sm font-medium text-slate-900">No tags found</div>
+                                <div className="text-xs text-slate-500 mt-1">
+                                    {q ? 'Try another search term' : 'Create your first tag to get started'}
+                                </div>
+                            </div>
                         )}
 
                         {/* Pager */}
-                        <div className="flex items-center justify-end gap-2 border-t p-2 text-xs">
-                            <button
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={page <= 1}
-                                className="rounded-md border px-2 py-1 disabled:opacity-50"
-                            >
-                                Prev
-                            </button>
-                            <span>
-                                Page {page} / {Math.max(1, data.last)}
-                            </span>
-                            <button
-                                onClick={() => setPage((p) => Math.min(data.last || 1, p + 1))}
-                                disabled={page >= data.last}
-                                className="rounded-md border px-2 py-1 disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
+                        {data.last > 1 && (
+                            <div className="flex items-center justify-between border-t bg-slate-50 px-4 py-3">
+                                <div className="text-sm text-slate-600">
+                                    Page {page} of {data.last}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                        disabled={page <= 1}
+                                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Prev
+                                    </button>
+                                    <button
+                                        onClick={() => setPage((p) => Math.min(data.last || 1, p + 1))}
+                                        disabled={page >= data.last}
+                                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
@@ -317,15 +357,20 @@ function ModalShell({
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-slate-900/40" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
             <div className="absolute inset-0 flex items-center justify-center p-4">
-                <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
-                    <div className="flex items-center justify-between border-b px-4 py-3">
+                <div className="w-full max-w-md overflow-hidden rounded-2xl border bg-white shadow-2xl">
+                    <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
                         <h3 className="text-base font-semibold">{title}</h3>
-                        <button onClick={onClose} className="rounded-lg px-2 py-1 text-slate-600 hover:bg-slate-100">✕</button>
+                        <button
+                            onClick={onClose}
+                            className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
                     <div className="p-4">{children}</div>
-                    {footer && <div className="flex items-center justify-end gap-2 border-t bg-white p-3">{footer}</div>}
+                    {footer && <div className="flex items-center justify-end gap-2 border-t bg-slate-50 p-4">{footer}</div>}
                 </div>
             </div>
         </div>
@@ -347,11 +392,17 @@ function CreateTagModal({
     return (
         <ModalShell
             open={open}
-            title="Create tag"
+            title="Create Tag"
             onClose={busy ? () => { } : onClose}
             footer={
                 <>
-                    <button onClick={onClose} className="rounded-xl border px-4 py-2">Cancel</button>
+                    <button
+                        onClick={onClose}
+                        disabled={busy}
+                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
                     <button
                         disabled={!name.trim() || busy}
                         onClick={async () => {
@@ -362,21 +413,35 @@ function CreateTagModal({
                                 setBusy(false);
                             }
                         }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {busy && <Spinner />}Create
+                        {busy ? <Spinner /> : <Plus className="h-4 w-4" />}
+                        Create
                     </button>
                 </>
             }
         >
-            <label className="block text-sm">
-                <div className="mb-1 text-slate-600">Name</div>
+            <label className="block">
+                <div className="mb-2 text-sm font-medium text-slate-700">Tag Name</div>
                 <input
                     autoFocus
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. vip, partner, warm"
-                    className="w-full rounded-xl border bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && name.trim() && !busy) {
+                            e.preventDefault();
+                            (async () => {
+                                setBusy(true);
+                                try {
+                                    await onSubmit(name);
+                                } finally {
+                                    setBusy(false);
+                                }
+                            })();
+                        }
+                    }}
                 />
             </label>
         </ModalShell>
@@ -400,11 +465,17 @@ function RenameTagModal({
     return (
         <ModalShell
             open={open}
-            title={`Rename #${tag.name}`}
+            title={`Rename Tag`}
             onClose={busy ? () => { } : onClose}
             footer={
                 <>
-                    <button onClick={onClose} className="rounded-xl border px-4 py-2">Cancel</button>
+                    <button
+                        onClick={onClose}
+                        disabled={busy}
+                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
                     <button
                         disabled={!name.trim() || name.trim() === tag.name || busy}
                         onClick={async () => {
@@ -415,20 +486,38 @@ function RenameTagModal({
                                 setBusy(false);
                             }
                         }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {busy && <Spinner />}Save
+                        {busy ? <Spinner /> : <Check className="h-4 w-4" />}
+                        Save
                     </button>
                 </>
             }
         >
-            <label className="block text-sm">
-                <div className="mb-1 text-slate-600">New name</div>
+            <div className="mb-3 rounded-lg bg-slate-50 p-3">
+                <div className="text-xs text-slate-500 mb-1">Current name</div>
+                <div className="font-medium">#{tag.name}</div>
+            </div>
+            <label className="block">
+                <div className="mb-2 text-sm font-medium text-slate-700">New Name</div>
                 <input
                     autoFocus
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-xl border bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition-all focus:border-slate-300 focus:ring-2 focus:ring-slate-200"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && name.trim() && name.trim() !== tag.name && !busy) {
+                            e.preventDefault();
+                            (async () => {
+                                setBusy(true);
+                                try {
+                                    await onSubmit(name);
+                                } finally {
+                                    setBusy(false);
+                                }
+                            })();
+                        }
+                    }}
                 />
             </label>
         </ModalShell>
@@ -450,11 +539,17 @@ function ConfirmDeleteModal({
     return (
         <ModalShell
             open={open}
-            title="Delete tag"
+            title="Delete Tag"
             onClose={busy ? () => { } : onClose}
             footer={
                 <>
-                    <button onClick={onClose} className="rounded-xl border px-4 py-2">Cancel</button>
+                    <button
+                        onClick={onClose}
+                        disabled={busy}
+                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
                     <button
                         onClick={async () => {
                             setBusy(true);
@@ -464,17 +559,21 @@ function ConfirmDeleteModal({
                                 setBusy(false);
                             }
                         }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={busy}
                     >
-                        {busy && <Spinner />}Delete
+                        {busy ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+                        Delete
                     </button>
                 </>
             }
         >
-            <p className="text-sm text-slate-600">
-                Are you sure you want to delete tag <b>#{tag.name}</b>? This action cannot be undone.
-            </p>
+            <div className="rounded-lg bg-rose-50 border border-rose-200 p-4">
+                <p className="text-sm text-rose-900">
+                    Are you sure you want to delete tag <span className="font-semibold">#{tag.name}</span>?
+                    This action cannot be undone.
+                </p>
+            </div>
         </ModalShell>
     );
 }

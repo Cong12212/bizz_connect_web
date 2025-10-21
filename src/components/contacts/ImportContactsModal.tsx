@@ -250,7 +250,9 @@ export default function ImportContactsModal({
                                     const res = await importContacts(file, matchBy, token);
                                     setSummary(res);
                                     toast.success('Import completed.');
-                                    onDone?.();
+                                    onDone?.(); // ✅ Gọi callback để refresh list
+                                    // Reset state sau khi import xong
+                                    setFile(null);
                                 } catch (e: any) {
                                     toast.error(e?.message || 'Import failed');
                                 } finally {

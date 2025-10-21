@@ -4,6 +4,19 @@ import { useEffect, useMemo, useState } from 'react';
 import AppNav from '../components/AppNav';
 import { useAppSelector } from '../utils/hooks';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../components/ui/Toast';
+import {
+    Bell,
+    BellDot,
+    Calendar,
+    ClockArrowUp,
+    CheckCircle2,
+    User,
+    Clock,
+    RefreshCw,
+    ExternalLink,
+    Eye,
+} from 'lucide-react';
 
 import {
     listNotifications,
@@ -14,18 +27,30 @@ import {
 
 type Scope = 'all' | 'unread' | 'upcoming' | 'past';
 
-const typeEmoji: Record<string, string> = {
-    'contact.created': '👤',
-    'reminder.created': '⏰',
-    'reminder.upcoming': '🔔',
-    'reminder.done': '✅',
-};
+function getTypeIcon(type: string) {
+    if (type.includes('contact')) return User;
+    if (type.includes('reminder.done')) return CheckCircle2;
+    if (type.includes('reminder.upcoming')) return BellDot;
+    if (type.includes('reminder')) return Clock;
+    return Bell;
+}
 
 function formatWhen(n: Notification) {
     const iso = n.scheduled_at || n.created_at;
     if (!iso) return '—';
     const d = new Date(iso);
-    return d.toLocaleString();
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function targetPath(n: Notification): string {
@@ -38,6 +63,7 @@ function targetPath(n: Notification): string {
 
 export default function NotificationsPage() {
     const navigate = useNavigate();
+    const toast = useToast();
 
     const reduxToken = useAppSelector((s) => s.auth.token);
     const token =
@@ -62,8 +88,14 @@ export default function NotificationsPage() {
                 setItems(res.data || []);
                 setSelected(new Set());
             })
-            .catch((e) => setErr(e?.message || 'Failed to load notifications'))
-            .finally(() => setLoading(false));
+            .catch((e) => {
+                if (!alive) return;
+                setErr(e?.message || 'Failed to load notifications');
+                toast.error(e?.message || 'Failed to load notifications');
+            })
+            .finally(() => {
+                if (alive) setLoading(false);
+            });
         return () => { alive = false; };
     }, [scope, token, refreshKey]);
 
@@ -91,19 +123,30 @@ export default function NotificationsPage() {
 
     // actions
     async function doMarkRead(id: number) {
-        await markNotificationRead(id, token);
-        setItems((arr) =>
-            arr.map((n) => (n.id === id ? { ...n, status: 'read', read_at: new Date().toISOString() } : n)),
-        );
+        try {
+            await markNotificationRead(id, token);
+            setItems((arr) =>
+                arr.map((n) => (n.id === id ? { ...n, status: 'read', read_at: new Date().toISOString() } : n)),
+            );
+            toast.success('Marked as read');
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to mark as read');
+        }
     }
+
     async function doBulkRead() {
         const ids = Array.from(selected);
         if (!ids.length) return;
-        await bulkReadNotifications(ids, token);
-        setItems((arr) =>
-            arr.map((n) => (selected.has(n.id) ? { ...n, status: 'read', read_at: new Date().toISOString() } : n)),
-        );
-        setSelected(new Set());
+        try {
+            await bulkReadNotifications(ids, token);
+            setItems((arr) =>
+                arr.map((n) => (selected.has(n.id) ? { ...n, status: 'read', read_at: new Date().toISOString() } : n)),
+            );
+            setSelected(new Set());
+            toast.success(`Marked ${ids.length} notification(s) as read`);
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to mark as read');
+        }
     }
 
     async function openNotification(n: Notification) {
@@ -121,6 +164,8 @@ export default function NotificationsPage() {
         navigate(href);
     }
 
+    const unreadCount = items.filter(n => n.status === 'unread').length;
+
     return (
         <div className="h-[100svh] overflow-hidden bg-slate-50 text-slate-900">
             <div className="sticky top-0 z-40 md:hidden">
@@ -129,38 +174,52 @@ export default function NotificationsPage() {
             <AppNav variant="sidebar" />
 
             <main className="md:ml-64 h-screen overflow-hidden p-4">
-                <div className="mx-auto max-w-5xl h-full flex flex-col">
+                <div className="mx-auto max-w-6xl h-full flex flex-col">
                     {/* Header */}
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <h1 className="text-lg font-semibold">Notifications</h1>
-
-                        <div className="ml-2 flex items-center gap-2 rounded-xl border bg-white p-1 text-sm">
-                            {(['all', 'unread', 'upcoming', 'past'] as Scope[]).map((s) => (
-                                <button
-                                    key={s}
-                                    onClick={() => setScope(s)}
-                                    className={`rounded-lg px-3 py-1.5 ${scope === s ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
-                                        }`}
-                                >
-                                    {s}
-                                </button>
-                            ))}
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h1 className="text-2xl font-bold">Notifications</h1>
+                            <p className="text-sm text-slate-600">
+                                {items.length} total · {unreadCount} unread
+                            </p>
                         </div>
 
                         <button
                             onClick={() => setRefreshKey((k) => k + 1)}
-                            className="ml-auto rounded-md border px-3 py-2 text-sm hover:bg-slate-50"
+                            disabled={loading}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                         >
+                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
                     </div>
 
-                    {err && <div className="mb-2 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>}
+                    {/* Scope filters */}
+                    <div className="mb-3 flex items-center gap-2">
+                        {([
+                            { key: 'all', label: 'All', icon: Bell },
+                            { key: 'unread', label: 'Unread', icon: BellDot },
+                            { key: 'upcoming', label: 'Upcoming', icon: ClockArrowUp },
+                            { key: 'past', label: 'Past', icon: Calendar },
+                        ] as Array<{ key: Scope; label: string; icon: any }>).map(({ key, label, icon: Icon }) => (
+                            <button
+                                key={key}
+                                onClick={() => setScope(key)}
+                                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${scope === key
+                                    ? 'border-slate-900 bg-slate-900 text-white'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                            >
+                                <Icon className="h-4 w-4" />
+                                {label}
+                            </button>
+                        ))}
+                    </div>
 
                     {/* Card: list area scrollable */}
-                    <div className="overflow-hidden rounded-xl border bg-white flex min-h-0 flex-col">
+                    <div className="overflow-hidden rounded-xl border bg-white flex min-h-0 flex-col shadow-sm">
                         {/* Sticky header */}
-                        <div className="grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 sticky top-0 z-10">
+                        <div className="grid grid-cols-[40px_1.5fr_140px_180px] items-center gap-3 border-b bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600 sticky top-0 z-10">
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -174,8 +233,7 @@ export default function NotificationsPage() {
                                     onChange={(e) => toggleAllCurrentPage(e.target.checked)}
                                 />
                             </div>
-                            <div>Title & Body</div>
-                            <div>Type</div>
+                            <div>Notification</div>
                             <div>When</div>
                             <div>Actions</div>
                         </div>
@@ -185,21 +243,21 @@ export default function NotificationsPage() {
                             {loading ? (
                                 <div className="p-3">
                                     {Array.from({ length: 12 }).map((_, i) => (
-                                        <div key={i} className="mb-2 h-12 animate-pulse rounded-lg bg-slate-200" />
+                                        <div key={i} className="mb-2 h-16 animate-pulse rounded-lg bg-slate-200" />
                                     ))}
                                 </div>
                             ) : items.length ? (
                                 <ul>
                                     {items.map((n) => {
                                         const checked = selected.has(n.id);
-                                        const emoji = typeEmoji[n.type] ?? '🔷';
+                                        const Icon = getTypeIcon(n.type);
                                         const unread = n.status === 'unread';
 
                                         return (
                                             <li
                                                 key={n.id}
-                                                className={`grid grid-cols-[40px_1.4fr_1fr_120px_140px] items-center gap-2 px-3 py-2 transition-colors ${unread
-                                                    ? 'bg-slate-100 hover:bg-slate-200'
+                                                className={`grid grid-cols-[40px_1.5fr_140px_180px] items-center gap-3 px-4 py-3 transition-colors border-b border-slate-100 last:border-0 ${unread
+                                                    ? 'bg-blue-50/50 hover:bg-blue-50'
                                                     : 'bg-white hover:bg-slate-50'
                                                     }`}
                                             >
@@ -213,50 +271,61 @@ export default function NotificationsPage() {
                                                     />
                                                 </div>
 
-                                                {/* Clickable → open; unread có chấm xanh + title đậm hơn nhẹ */}
+                                                {/* Clickable notification content */}
                                                 <button
                                                     className="min-w-0 text-left"
                                                     onClick={() => openNotification(n)}
                                                     title="Open details"
                                                 >
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-lg leading-none">{emoji}</span>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${unread ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
+                                                            }`}>
+                                                            <Icon className="h-5 w-5" />
+                                                        </div>
                                                         <div className="min-w-0 flex-1">
-                                                            <div className={`truncate text-sm ${unread ? 'font-semibold' : 'font-medium'}`}>
-                                                                {n.title}{' '}
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`truncate text-sm ${unread ? 'font-semibold' : 'font-medium'}`}>
+                                                                    {n.title}
+                                                                </div>
                                                                 {unread && (
-                                                                    <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sky-500 align-middle" />
+                                                                    <span className="h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                                                                 )}
                                                             </div>
-                                                            <div className="truncate text-xs text-slate-500">
+                                                            <div className="truncate text-xs text-slate-500 mt-0.5">
                                                                 {n.body || '—'}
+                                                            </div>
+                                                            <div className="mt-1">
+                                                                <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                                                                    {n.type}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </button>
 
-                                                <div className="truncate text-xs text-slate-600">{n.type}</div>
-                                                <div className="truncate text-xs">{formatWhen(n)}</div>
+                                                <div className="text-xs text-slate-600">{formatWhen(n)}</div>
 
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="flex flex-wrap gap-1.5">
                                                     {unread && (
                                                         <button
-                                                            className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
+                                                            className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 doMarkRead(n.id);
                                                             }}
                                                         >
+                                                            <Eye className="h-3 w-3" />
                                                             Mark read
                                                         </button>
                                                     )}
                                                     <button
-                                                        className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
+                                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             openNotification(n);
                                                         }}
                                                     >
+                                                        <ExternalLink className="h-3 w-3" />
                                                         Open
                                                     </button>
                                                 </div>
@@ -265,20 +334,24 @@ export default function NotificationsPage() {
                                     })}
                                 </ul>
                             ) : (
-                                <div className="p-6 text-center text-sm text-slate-500">No notifications</div>
+                                <div className="p-12 text-center">
+                                    <Bell className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+                                    <div className="text-sm font-medium text-slate-900">No notifications</div>
+                                    <div className="text-xs text-slate-500 mt-1">You're all caught up!</div>
+                                </div>
                             )}
                         </div>
 
                         {/* Footer actions */}
-                        <div className="flex flex-col gap-2 border-t p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-                            <div className="order-2 flex items-center gap-2 sm:order-1">
-                                <span>
-                                    Selected: <b>{selected.size}</b> / {items.length}
+                        <div className="flex flex-col gap-2 border-t bg-slate-50 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                            <div className="order-2 flex flex-wrap items-center gap-2 sm:order-1">
+                                <span className="text-sm text-slate-600">
+                                    Selected: <b>{selected.size}</b>
                                 </span>
                                 <button
                                     onClick={() => toggleAllCurrentPage(true)}
                                     disabled={!pageIds.length}
-                                    className="rounded-md border px-2 py-1 disabled:opacity-50"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Select all"
                                 >
                                     Select all
@@ -286,7 +359,7 @@ export default function NotificationsPage() {
                                 <button
                                     onClick={() => setSelected(new Set())}
                                     disabled={selected.size === 0}
-                                    className="rounded-md border px-2 py-1 disabled:opacity-50"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Clear selected
                                 </button>
@@ -296,16 +369,13 @@ export default function NotificationsPage() {
                                 <button
                                     onClick={doBulkRead}
                                     disabled={selected.size === 0}
-                                    className="rounded-md border px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Mark read (bulk)
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Mark read
                                 </button>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="mt-3 text-xs text-slate-500">
-                        Read-only: you can mark as read and open details. Backend shows up to 20 latest; DB retains 50 per user.
                     </div>
                 </div>
             </main>

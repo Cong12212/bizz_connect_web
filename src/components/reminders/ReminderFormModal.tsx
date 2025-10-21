@@ -105,21 +105,19 @@ export default function ReminderFormModal({
 
     function isoToLocalInput(iso?: string | null) {
         if (!iso) return '';
-        const d = new Date(iso);
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+        const match = String(iso).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+        if (!match) return '';
+
+        const [, year, month, day, hour, minute] = match;
+
+        // ✅ Trả về format chính xác, không có giây
+        return `${year}-${month}-${day}T${hour}:${minute}`;
     }
-    function localInputToOffset(local: string) {
+    function localInputToUTC(local: string) {
         if (!local) return null;
-        const d = new Date(local);
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const y = d.getFullYear(), m = pad(d.getMonth() + 1), day = pad(d.getDate());
-        const hh = pad(d.getHours()), mm = pad(d.getMinutes()), ss = pad(d.getSeconds());
-        const tzMin = -d.getTimezoneOffset();
-        const sign = tzMin >= 0 ? '+' : '-';
-        const abs = Math.abs(tzMin);
-        const tzh = pad(Math.floor(abs / 60)), tzm = pad(abs % 60);
-        return `${y}-${m}-${day}T${hh}:${mm}:${ss}${sign}${tzh}:${tzm}`;
+        // Input: "2025-10-07T09:18" → Output: "2025-10-07 09:18:00"
+        return local.replace('T', ' ') + ':00';
     }
 
     async function handleSubmit(e: React.FormEvent) {
@@ -134,7 +132,7 @@ export default function ReminderFormModal({
                 contact_id: contactIds[0],
                 title: title.trim(),
                 note: note || null,
-                due_at: localInputToOffset(dueLocal),
+                due_at: localInputToUTC(dueLocal),
                 status,
                 channel,
             };
@@ -226,9 +224,16 @@ export default function ReminderFormModal({
                             <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <label className="block">
                                     <div className="mb-1 text-sm text-slate-600">Due at</div>
-                                    <input type="datetime-local" value={dueLocal}
-                                        onChange={(e) => setDueLocal(e.target.value)}
-                                        className="w-full rounded-md border px-3 py-2" />
+                                    <input
+                                        type="datetime-local"
+                                        value={dueLocal}
+                                        onChange={(e) => {
+                                            console.log('Input changed to:', e.target.value);
+                                            setDueLocal(e.target.value);
+                                        }}
+                                        className="w-full rounded-md border px-3 py-2"
+                                        step="60" // ✅ Thêm step để chỉ chọn phút, không có giây
+                                    />
                                 </label>
                                 <label className="block">
                                     <div className="mb-1 text-sm text-slate-600">Status</div>

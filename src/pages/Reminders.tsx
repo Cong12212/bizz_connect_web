@@ -18,6 +18,18 @@ import {
 } from '../services/reminders';
 import { useToast } from '../components/ui/Toast';
 
+import {
+    Clock,
+    CheckCircle2,
+    XCircle,
+    MinusCircle,
+    Edit2,
+    Trash2,
+    Check,
+    FileText,
+    UserMinus
+} from 'lucide-react';
+
 type Group = {
     id: number;
     title: string;
@@ -27,11 +39,56 @@ type Group = {
     contacts: { id: number; name: string; company?: string | null; is_primary: boolean }[];
 };
 
-const fmtLocal = (iso?: string | null) => (iso ? new Date(iso).toLocaleString() : '—');
+function formatUTCAsIs(isoString?: string | null): string {
+    if (!isoString) return '—';
+    const match = String(isoString).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+    if (!match) return String(isoString);
+
+    const [, year, month, day, hour, minute] = match;
+    return `${day}/${month}/${year}, ${hour}:${minute}`;
+}
 
 /* ---------- Small helpers ---------- */
 function cn(...xs: Array<string | false | null | undefined>) {
     return xs.filter(Boolean).join(' ');
+}
+
+function StatusBadge({ status }: { status: ReminderStatus }) {
+    const config = {
+        pending: { icon: Clock, bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200', label: 'Pending' },
+        done: { icon: CheckCircle2, bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200', label: 'Done' },
+        skipped: { icon: MinusCircle, bg: 'bg-slate-50', text: 'text-slate-700', ring: 'ring-slate-200', label: 'Skipped' },
+        cancelled: { icon: XCircle, bg: 'bg-rose-50', text: 'text-rose-700', ring: 'ring-rose-200', label: 'Cancelled' },
+    }[status] || { icon: Clock, bg: 'bg-slate-50', text: 'text-slate-700', ring: 'ring-slate-200', label: status };
+
+    const Icon = config.icon;
+
+    return (
+        <span className={cn(
+            'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ring-1',
+            config.bg,
+            config.text,
+            config.ring
+        )}>
+            <Icon className="h-3 w-3" />
+            {config.label}
+        </span>
+    );
+}
+
+function StatusIcon({ status }: { status: ReminderStatus }) {
+    switch (status) {
+        case 'pending':
+            return <Clock className="h-4 w-4 text-amber-600" />;
+        case 'done':
+            return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
+        case 'skipped':
+            return <MinusCircle className="h-4 w-4 text-slate-600" />;
+        case 'cancelled':
+            return <XCircle className="h-4 w-4 text-rose-600" />;
+        default:
+            return <Clock className="h-4 w-4 text-slate-400" />;
+    }
 }
 
 /** A tiny popover used for "+N more" */
@@ -276,18 +333,6 @@ export default function RemindersPage() {
         }
     }
 
-    function StatusBadge({ s }: { s: ReminderStatus }) {
-        const cls =
-            s === 'pending'
-                ? 'bg-amber-50 text-amber-700 ring-amber-200'
-                : s === 'done'
-                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                    : s === 'skipped'
-                        ? 'bg-slate-100 text-slate-700 ring-slate-200'
-                        : 'bg-rose-50 text-rose-700 ring-rose-200';
-        return <span className={cn('inline-block rounded-full px-2 py-0.5 text-xs ring-1', cls)}>{s}</span>;
-    }
-
     function openEdit(g: Group) {
         const firstContactId = g.contacts[0]?.id ?? 0;
         const row: Reminder = {
@@ -442,19 +487,24 @@ export default function RemindersPage() {
                                                     <span
                                                         key={c.id}
                                                         className={cn(
-                                                            'inline-flex max-w-[220px] items-center gap-1 truncate rounded-full border px-2 py-0.5 text-xs',
-                                                            c.is_primary && 'border-slate-900 text-slate-900',
-                                                            !c.is_primary && 'border-slate-300 text-slate-600',
+                                                            'inline-flex max-w-[220px] items-center gap-1.5 truncate rounded-md border px-2.5 py-1 text-xs font-medium',
+                                                            c.is_primary
+                                                                ? 'border-slate-900 bg-slate-900 text-white'
+                                                                : 'border-slate-300 bg-white text-slate-700',
                                                         )}
-                                                        title={`${c.name}${c.company ? ' · ' + c.company : ''}${c.is_primary ? ' · primary' : ''
-                                                            }`}
+                                                        title={`${c.name}${c.company ? ' · ' + c.company : ''}${c.is_primary ? ' · primary' : ''}`}
                                                     >
                                                         <span className="truncate">
                                                             {c.name}
                                                             {c.company ? ` · ${c.company}` : ''}
                                                         </span>
                                                         <button
-                                                            className="ml-1 rounded-full px-1.5 text-rose-600 hover:bg-rose-50"
+                                                            className={cn(
+                                                                'ml-0.5 rounded-md px-1 text-sm transition-colors',
+                                                                c.is_primary
+                                                                    ? 'hover:bg-slate-800'
+                                                                    : 'hover:bg-rose-50 text-rose-600'
+                                                            )}
                                                             title="Remove contact from this reminder"
                                                             onClick={() => detachOne(g.id, c.id)}
                                                         >
@@ -474,22 +524,25 @@ export default function RemindersPage() {
                                                             {g.contacts.map((c) => (
                                                                 <li
                                                                     key={c.id}
-                                                                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-slate-50"
+                                                                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-slate-50"
                                                                     title={`${c.name}${c.company ? ' · ' + c.company : ''}`}
                                                                 >
                                                                     <div className="min-w-0">
-                                                                        <div className="truncate text-sm">
+                                                                        <div className="truncate text-sm font-medium">
                                                                             {c.name}
                                                                             {c.company ? ` · ${c.company}` : ''}
                                                                         </div>
                                                                         {c.is_primary && (
-                                                                            <span className="text-[10px] text-slate-500">primary</span>
+                                                                            <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-700">
+                                                                                Primary
+                                                                            </span>
                                                                         )}
                                                                     </div>
                                                                     <button
-                                                                        className="rounded-full px-2 text-xs text-rose-600 hover:bg-rose-50"
+                                                                        className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
                                                                         onClick={() => detachOne(g.id, c.id)}
                                                                     >
+                                                                        <UserMinus className="h-3 w-3" />
                                                                         Remove
                                                                     </button>
                                                                 </li>
@@ -500,7 +553,7 @@ export default function RemindersPage() {
 
                                                 {hiddenCount > 0 && (
                                                     <button
-                                                        className="rounded-full border px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50"
+                                                        className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                                         onClick={() => setOpenMoreOf((cur) => (cur === g.id ? null : g.id))}
                                                         aria-haspopup="dialog"
                                                         aria-expanded={openMoreOf === g.id}
@@ -511,31 +564,35 @@ export default function RemindersPage() {
                                                 )}
                                             </div>
 
-                                            <div className="truncate text-sm">{fmtLocal(g.due_at)}</div>
+                                            <div className="truncate text-sm">{formatUTCAsIs(g.due_at)}</div>
 
-                                            <div className="text-xs">
-                                                <StatusBadge s={g.status} />
+                                            <div className="flex items-center justify-center">
+                                                <StatusBadge status={g.status} />
                                             </div>
 
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex items-center gap-1.5">
                                                 <button
-                                                    className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
+                                                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
                                                     onClick={() => openEdit(g)}
+                                                    title="Edit reminder"
                                                 >
+                                                    <Edit2 className="h-3.5 w-3.5" />
                                                     Edit
                                                 </button>
 
                                                 {g.status !== 'done' && (
                                                     <button
-                                                        className="rounded-md border px-2 py-1 text-xs hover:bg-slate-50"
+                                                        className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors"
                                                         onClick={() => markDoneOne(g.id)}
+                                                        title="Mark as done"
                                                     >
-                                                        Mark done
+                                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                                        Done
                                                     </button>
                                                 )}
 
                                                 <button
-                                                    className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs text-rose-700 hover:bg-rose-100"
+                                                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition-colors"
                                                     onClick={async () => {
                                                         if (!confirm('Delete this reminder (all contacts)?')) return;
                                                         try {
@@ -546,8 +603,10 @@ export default function RemindersPage() {
                                                             toast.error(e?.message || 'Failed to delete reminder');
                                                         }
                                                     }}
+                                                    title="Delete reminder"
                                                 >
-                                                    Delete reminder
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    Delete
                                                 </button>
                                             </div>
                                         </li>
@@ -559,22 +618,22 @@ export default function RemindersPage() {
                         )}
 
                         {/* Footer/Pager */}
-                        <div className="flex flex-col gap-2 border-t p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-                            <div className="order-2 flex items-center gap-2 sm:order-1">
+                        <div className="flex flex-col gap-2 border-t bg-slate-50 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                            <div className="order-2 flex flex-wrap items-center gap-2 sm:order-1">
                                 <button
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     disabled={page <= 1}
-                                    className="rounded-md border px-2 py-1 disabled:opacity-50"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Prev
                                 </button>
-                                <span>
+                                <span className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium">
                                     Page {page} / {Math.max(1, lastPage)}
                                 </span>
                                 <button
                                     onClick={() => setPage((p) => Math.min(lastPage || 1, p + 1))}
                                     disabled={page >= lastPage}
-                                    className="rounded-md border px-2 py-1 disabled:opacity-50"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Next
                                 </button>
@@ -584,7 +643,7 @@ export default function RemindersPage() {
                                         setPerPage(parseInt(e.target.value, 10));
                                         setPage(1);
                                     }}
-                                    className="ml-2 rounded-md border px-2 py-1"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                 >
                                     {[10, 20, 50, 100].map((n) => (
                                         <option key={n} value={n}>
@@ -592,13 +651,13 @@ export default function RemindersPage() {
                                         </option>
                                     ))}
                                 </select>
-                                <span className="ml-4">
+                                <span className="ml-2 text-sm text-slate-600">
                                     Selected: <b>{selected.size}</b>
                                 </span>
                                 <button
                                     onClick={() => toggleAllCurrentPage(true)}
                                     disabled={!pageIds.length}
-                                    className="rounded-md border px-2 py-1 disabled:opacity-50"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Select this page"
                                 >
                                     Select this page
@@ -606,7 +665,7 @@ export default function RemindersPage() {
                                 <button
                                     onClick={() => setSelected(new Set())}
                                     disabled={selected.size === 0}
-                                    className="rounded-md border px-2 py-1 disabled:opacity-50"
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Clear selected
                                 </button>
@@ -616,23 +675,26 @@ export default function RemindersPage() {
                                 <button
                                     onClick={() => doBulkStatus('done')}
                                     disabled={selected.size === 0 || bulkBusy}
-                                    className="rounded-md border px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    {bulkBusy ? 'Working…' : 'Mark done (bulk)'}
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    {bulkBusy ? 'Working…' : 'Mark done'}
                                 </button>
                                 <button
                                     onClick={() => doBulkStatus('pending')}
                                     disabled={selected.size === 0 || bulkBusy}
-                                    className="rounded-md border px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    Set pending (bulk)
+                                    <Clock className="h-4 w-4" />
+                                    Set pending
                                 </button>
                                 <button
                                     onClick={doBulkDelete}
                                     disabled={selected.size === 0 || bulkBusy}
-                                    className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    Delete selected reminders
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete selected
                                 </button>
                             </div>
                         </div>

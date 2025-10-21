@@ -8,15 +8,24 @@ export default function ReminderPivotTable({
 }: {
     items: ReminderEdge[];
     loading: boolean;
-    pageKeys: string[];                 // edge_key[]
+    pageKeys: string[];
     allPageChecked: boolean;
     somePageChecked: boolean;
     onToggleAll: (checked: boolean) => void;
     onToggleOne: (edgeKey: string, checked: boolean) => void;
-    onMarkDone: (reminderId: number) => void;         // áp dụng cho reminder
-    onDetach: (edge: ReminderEdge) => void;           // detach 1 edge
-    onDeleteReminder: (reminderId: number) => void;   // xoá cả reminder
+    onMarkDone: (reminderId: number) => void;
+    onDetach: (edge: ReminderEdge) => void;
+    onDeleteReminder: (reminderId: number) => void;
 }) {
+    // ✅ Hàm format UTC không convert timezone
+    function formatUTCAsIs(isoString: string): string {
+        const match = String(isoString).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+        if (!match) return String(isoString);
+
+        const [, year, month, day, hour, minute] = match;
+        return `${day}/${month}/${year}, ${hour}:${minute}`;
+    }
+
     return (
         <div className="overflow-hidden rounded-xl border bg-white">
             <div className="grid grid-cols-[40px_1.1fr_1fr_1fr_150px_220px] border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
@@ -56,7 +65,10 @@ export default function ReminderPivotTable({
                             <div className="truncate text-sm">
                                 {e.contact_name}{e.contact_company ? ` · ${e.contact_company}` : ''}
                             </div>
-                            <div className="truncate text-sm">{e.due_at ? new Date(e.due_at).toLocaleString() : '—'}</div>
+                            {/* ✅ Sửa dòng này */}
+                            <div className="truncate text-sm">
+                                {e.due_at ? formatUTCAsIs(e.due_at) : '—'}
+                            </div>
                             <div className="text-xs">
                                 <span className={`inline-block rounded-full px-2 py-0.5 ${e.status === 'pending'
                                     ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'

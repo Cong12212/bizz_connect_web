@@ -6,7 +6,7 @@ export type ReminderChannel = "app" | "email" | "calendar";
 export type Reminder = {
     id: number;
     contact_id: number | null;     // primary contact
-    owner_user_id: number;
+    owner_user_id: number;         // ✅ Add this property
     title: string;
     note?: string | null;
     due_at: string | null;         // ISO
