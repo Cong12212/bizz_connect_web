@@ -18,7 +18,6 @@ import useMediaQuery from "../hooks/useMediaQuery";
 import ContactDetailModal from "../components/contacts/ContactDetailModal";
 import ImportContactsModal from "../components/contacts/ImportContactsModal";
 import ExportContactsModal from "../components/contacts/ExportContactsModal";
-import { Search, Download, Upload, UserPlus, SortAsc } from "lucide-react";
 
 export default function ContactsPage() {
     const nav = useNavigate();
@@ -116,109 +115,51 @@ export default function ContactsPage() {
             {/* MAIN */}
             <main className="md:ml-64 flex h-screen flex-col overflow-hidden">
                 {/* Toolbar */}
-                <div className="flex-none border-b bg-white px-4 py-3">
-                    {/* Row 1: Tags/Filters */}
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                        {/* Example filter tags - you can make these dynamic */}
-                        {q && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium">
-                                {q}
-                                <button
-                                    onClick={() => setQ('')}
-                                    className="ml-0.5 rounded-full hover:bg-slate-100"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        )}
-                        {sort !== 'name' && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium">
-                                Sort: {sort}
-                                <button
-                                    onClick={() => setSort('name')}
-                                    className="ml-0.5 rounded-full hover:bg-slate-100"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        )}
-                    </div>
+                <div className="flex-none flex items-center gap-3 border-b bg-white/70 p-3 backdrop-blur supports-[backdrop-filter]:bg-white/40">
+                    <h1 className="hidden text-lg font-semibold sm:block">Contacts</h1>
 
-                    {/* Row 2: Main controls */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            onClick={() => setPage(Math.max(1, page - 1))}
-                            disabled={page <= 1}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Prev
-                        </button>
-
-                        <span className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium">
-                            Page {page} / {data.last || 1}
-                        </span>
-
-                        <button
-                            onClick={() => setPage(Math.min(data.last, page + 1))}
-                            disabled={page >= data.last}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-
-                        <select
-                            value={per}
+                    <div className="relative w-[min(520px,80vw)]">
+                        <input
+                            value={q}
                             onChange={(e) => {
-                                // Note: per is const, you'll need to make it state
-                                // For now this is just UI
+                                setPage(1);
+                                setQ(e.target.value);
                             }}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                            <option value="20">20/page</option>
-                            <option value="30">30/page</option>
-                            <option value="50">50/page</option>
-                            <option value="100">100/page</option>
-                        </select>
-
-                        <span className="text-sm text-slate-600">
-                            Selected: <b>0</b>
+                            placeholder="Search name, email, phone…"
+                            className="w-full rounded-xl border bg-white px-4 py-2 pl-10 outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            🔎
                         </span>
-
-                        <button className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                            Select this page
-                        </button>
-
-                        <button className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                            Clear selected
-                        </button>
-
-                        <div className="ml-auto flex items-center gap-2">
-                            <button
-                                onClick={() => setOpenExport(true)}
-                                className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            >
-                                <Download className="h-4 w-4" />
-                                Export
-                            </button>
-                            <button
-                                onClick={() => setOpenImport(true)}
-                                className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            >
-                                <Upload className="h-4 w-4" />
-                                Import
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setEditTarget(null);
-                                    setOpenEdit(true);
-                                }}
-                                className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
-                            >
-                                <UserPlus className="h-4 w-4" />
-                                New Contact
-                            </button>
-                        </div>
                     </div>
+
+                    <select
+                        value={sort}
+                        onChange={(e) => setSort(e.target.value as any)}
+                        className="rounded-xl border bg-white px-3 py-2"
+                    >
+                        <option value="name">Name A→Z</option>
+                        <option value="-name">Name Z→A</option>
+                        <option value="-id">Newest</option>
+                        <option value="id">Oldest</option>
+                    </select>
+
+                    <button onClick={() => setOpenExport(true)} className="rounded-xl border px-3 py-2">
+                        Export
+                    </button>
+                    <button onClick={() => setOpenImport(true)} className="rounded-xl border px-3 py-2">
+                        Import
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setEditTarget(null);   // ➜ tạo mới
+                            setOpenEdit(true);
+                        }}
+                        className="ml-auto rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
+                    >
+                        New
+                    </button>
                 </div>
 
                 {/* Content */}
