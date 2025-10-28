@@ -82,21 +82,21 @@ export default function ContactsPage() {
             return;
         }
 
-        // ✅ Kiểm tra xem đã có data trong list chưa
+        // Check if data already exists in list
         const cached = data.items.find((x) => x.id === selectedId);
         if (cached) {
-            setSelected(cached); // Hiển thị ngay data từ list
+            setSelected(cached); // Display data from list immediately
         }
 
         // Fetch full detail
-        setLoadingDetail(true); // ✅ Chỉ loading detail
+        setLoadingDetail(true); // Only loading detail
         getContact(selectedId, token)
             .then((full) => setSelected(full))
             .catch(() => {
                 const fallback = data.items.find((x) => x.id === selectedId) || null;
                 setSelected(fallback);
             })
-            .finally(() => setLoadingDetail(false)); // ✅
+            .finally(() => setLoadingDetail(false));
 
         if (isMobile) setOpenDetailMobile(true);
     }, [selectedId, token, data.items]);
@@ -189,7 +189,7 @@ export default function ContactsPage() {
 
                     {/* RIGHT: detail (desktop) */}
                     <section className="hidden overflow-y-auto p-6 md:block">
-                        {loadingDetail ? ( // ✅ Loading riêng cho detail
+                        {loadingDetail ? ( // Separate loading for detail
                             <div className="grid h-full place-items-center text-slate-500">
                                 <div>Loading...</div>
                             </div>
@@ -227,7 +227,7 @@ export default function ContactsPage() {
             <ContactDetailModal
                 open={openDetailMobile}
                 contact={selected}
-                loading={loadingDetail} // ✅ Truyền loading state
+                loading={loadingDetail} // Pass loading state
                 onClose={() => {
                     setOpenDetailMobile(false);
                     nav("/contacts");
@@ -271,8 +271,8 @@ export default function ContactsPage() {
                 onClose={() => setOpenImport(false)}
                 token={token}
                 onDone={() => {
-                    setPage(1); // Reset về trang 1
-                    setRefreshKey((k) => k + 1); // ✅ Trigger refresh list
+                    setPage(1); // Reset to page 1
+                    setRefreshKey((k) => k + 1); // Trigger list refresh
                 }}
             />
             <ExportContactsModal

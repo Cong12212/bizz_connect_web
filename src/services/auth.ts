@@ -46,14 +46,14 @@ export async function register(payload: RegisterPayload) {
 
 /** ====== Me ====== */
 export async function getMe(): Promise<Me> {
-    const { data } = await api.get("/auth/me"); // ⬅️ đúng với routes/web
+    const { data } = await api.get("/auth/me"); // Matches routes/web
     return data;
 }
 
-// BE không có endpoint riêng update profile -> thường làm PATCH /auth/me.
-// Nếu bạn dùng /user/update thì sửa lại cho khớp; ở đây dùng /auth/me (PATCH).
+// BE doesn't have separate update profile endpoint -> usually PATCH /auth/me.
+// If you use /user/update then modify accordingly; here we use /auth/me (PATCH).
 export async function updateMe(payload: Partial<Pick<Me, "name" | "email">> & { password?: string }) {
-    const { data } = await api.patch("/auth/me", payload); // tạo route nếu chưa có
+    const { data } = await api.patch("/auth/me", payload); // Create route if not exists
     return data as Me;
 }
 

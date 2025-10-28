@@ -13,6 +13,7 @@ import RemindersPage from './pages/Reminders';
 import NotificationsPage from './pages/Notifications';
 import SettingsPage from './pages/Setting';
 import VerifyOnlyRoute from './components/VerifyOnlyRoute';
+import NotFoundPage from './pages/NotFound';
 
 export default function App() {
   return (
@@ -37,7 +38,8 @@ export default function App() {
       <Route path="/notifications" element={<VerifiedRoute><NotificationsPage /></VerifiedRoute>} />
       <Route path="/settings" element={<VerifiedRoute><SettingsPage /></VerifiedRoute>} />
 
-      <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />
+      {/* 404 Not Found */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

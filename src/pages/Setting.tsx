@@ -65,15 +65,15 @@ export default function SettingsPage() {
 
     async function onLogout() {
         try { await logout(); } catch { }
-        // 1) Xoá token lưu trữ
+        // 1) Remove stored token
         if (typeof window !== "undefined") localStorage.removeItem("bc_token");
-        // 2) Xoá header Authorization của axios
-        setAuthToken(''); // hoặc: delete api.defaults.headers.common['Authorization']
-        // 3) Xoá token/verified trong Redux
+        // 2) Remove Authorization header from axios
+        setAuthToken(''); // or: delete api.defaults.headers.common['Authorization']
+        // 3) Clear token/verified in Redux
         dispatch(logout());
-        // 4) Điều hướng (fallback hard reload nếu cần)
+        // 4) Navigate (fallback to hard reload if needed)
         navigate("/auth", { replace: true });
-        // window.location.replace('/auth'); // nếu muốn chắc chắn
+        // window.location.replace('/auth'); // if you want to be sure
     }
 
     return (

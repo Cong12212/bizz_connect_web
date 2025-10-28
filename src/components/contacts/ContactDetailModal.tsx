@@ -32,7 +32,7 @@ export default function ContactDetailModal({ open, contact, loading, onClose, on
                 </div>
 
                 <div className="h-[calc(100%-48px)] overflow-y-auto p-4">
-                    {loading ? ( // ✅ Hiển thị loading
+                    {loading ? ( // Display loading
                         <div className="grid h-full place-items-center text-slate-500">
                             <div className="text-center">
                                 <div className="mb-2 text-2xl">⏳</div>

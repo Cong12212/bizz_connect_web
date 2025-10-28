@@ -31,7 +31,7 @@ export default function ContactList({
                 {total} contacts
             </div>
 
-            {/* vùng cuộn — chừa chỗ cho mobile pager cố định */}
+            {/* Scroll area — reserve space for fixed mobile pager */}
             <div className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-0">
                 <ul className="px-2 pb-4">
                     {loading
@@ -43,7 +43,7 @@ export default function ContactList({
                                 const active = selectedId === c.id;
                                 return (
                                     <li key={c.id} className="group relative">
-                                        {/* KHÔNG bọc toàn item bằng <button> để tránh nested button */}
+                                        {/* DO NOT wrap entire item with <button> to avoid nested button */}
                                         <div
                                             role="button"
                                             tabIndex={0}
@@ -61,7 +61,7 @@ export default function ContactList({
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
-                                                    {/* Hàng: Tên + #tags (nếu có) */}
+                                                    {/* Row: Name + #tags (if any) */}
                                                     <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                                                         <div className="max-w-[60%] truncate text-sm font-medium">
                                                             {c.name}
@@ -80,13 +80,13 @@ export default function ContactList({
                                                         )}
                                                     </div>
 
-                                                    {/* Dòng phụ: job/company/email/phone */}
+                                                    {/* Secondary line: job/company/email/phone */}
                                                     <div className="truncate text-xs text-slate-500">
                                                         {c.job_title || c.company || c.email || c.phone || "—"}
                                                     </div>
                                                 </div>
 
-                                                {/* Delete: mobile luôn hiện; desktop hiện khi hover */}
+                                                {/* Delete: always visible on mobile; visible on hover on desktop */}
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -110,12 +110,12 @@ export default function ContactList({
                 </ul>
             </div>
 
-            {/* Desktop pager: sticky & căn giữa */}
+            {/* Desktop pager: sticky & centered */}
             <div className="sticky bottom-0 z-10 hidden border-t bg-white p-3 md:flex md:justify-center">
                 <NumberPager current={page} total={Math.max(1, last)} onPage={onPage} />
             </div>
 
-            {/* Mobile pager: FIXED & căn giữa */}
+            {/* Mobile pager: FIXED & centered */}
             <div
                 className="fixed inset-x-0 bottom-0 z-40 border-t bg-white p-2 md:hidden"
                 style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -134,7 +134,7 @@ function initials(name?: string) {
     return name.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
 }
 
-/** Trả về chuỗi trang dạng [1, '...', 7, 8, 9, '...', 20] */
+/** Returns page string like [1, '...', 7, 8, 9, '...', 20] */
 function getVisiblePages(current: number, total: number, max = 7): (number | "...")[] {
     if (total <= max) return Array.from({ length: total }, (_, i) => i + 1);
 
