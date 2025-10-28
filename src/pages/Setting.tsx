@@ -8,7 +8,8 @@ import { getMe, updateMe, type Me } from "@/services/auth";
 import { useNavigate } from "react-router-dom";
 import { setAuthToken } from "@/services/api";
 import { logout } from "@/features/auth/authSlice";
-
+import CompanySettings from "@/components/settings/CompanySettings";
+import BusinessCardSettings from "@/components/settings/BusinessCardSettings";
 
 export default function SettingsPage() {
     const navigate = useNavigate();
@@ -25,7 +26,6 @@ export default function SettingsPage() {
     const [me, setMe] = useState<Me | null>(null);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
 
     useEffect(() => {
         let alive = true;
@@ -50,12 +50,9 @@ export default function SettingsPage() {
         setSaving(true);
         setErr(null);
         try {
-            const payload: any = { name, email };
-            if (password.trim()) payload.password = password.trim();
-            const updated = await updateMe(payload);
+            const updated = await updateMe({ name, email });
             setMe(updated);
-            setPassword("");
-            alert("Saved!");
+            alert("Profile updated!");
         } catch (e: any) {
             setErr(e?.message || "Save failed");
         } finally {
@@ -65,15 +62,10 @@ export default function SettingsPage() {
 
     async function onLogout() {
         try { await logout(); } catch { }
-        // 1) Remove stored token
         if (typeof window !== "undefined") localStorage.removeItem("bc_token");
-        // 2) Remove Authorization header from axios
-        setAuthToken(''); // or: delete api.defaults.headers.common['Authorization']
-        // 3) Clear token/verified in Redux
+        setAuthToken('');
         dispatch(logout());
-        // 4) Navigate (fallback to hard reload if needed)
         navigate("/auth", { replace: true });
-        // window.location.replace('/auth'); // if you want to be sure
     }
 
     return (
@@ -82,65 +74,90 @@ export default function SettingsPage() {
                 <AppNav variant="mobile" />
             </div>
             <AppNav variant="sidebar" />
-            <main className="md:ml-64 h-screen overflow-y-auto p-4">
-                <div className="mx-auto max-w-3xl">
-                    <h1 className="mb-4 text-lg font-semibold">Settings</h1>
+            <main className="md:ml-64 h-screen overflow-y-auto">
+                <div className="mx-auto max-w-4xl p-4 pb-20">
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-semibold">Settings</h1>
+                        <p className="text-sm text-slate-600">Manage your profile, company, and business card</p>
+                    </div>
 
-                    {err && <div className="mb-3 rounded-md bg-rose-50 p-2 text-rose-700">{err}</div>}
+                    {err && <div className="mb-4 rounded-md bg-rose-50 p-3 text-rose-700">{err}</div>}
 
-                    <div className="overflow-hidden rounded-xl border bg-white">
-                        <div className="border-b bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
-                            Profile
+                    <div className="space-y-6">
+                        {/* Profile Section */}
+                        <div className="overflow-hidden rounded-xl border bg-white">
+                            <div className="border-b bg-slate-50 px-4 py-3">
+                                <h2 className="text-sm font-semibold text-slate-900">Profile Information</h2>
+                                <p className="text-xs text-slate-600">Update your personal details</p>
+                            </div>
+
+                            {loading ? (
+                                <div className="p-4 space-y-3">
+                                    {Array.from({ length: 3 }).map((_, i) => (
+                                        <div key={i} className="h-10 animate-pulse rounded-md bg-slate-200" />
+                                    ))}
+                                </div>
+                            ) : me ? (
+                                <form onSubmit={onSave} className="p-4 space-y-4">
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
+                                        <input
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-2 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={onLogout}
+                                            className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                                        >
+                                            Log out
+                                        </button>
+                                        <button
+                                            disabled={saving}
+                                            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                                        >
+                                            {saving ? "Saving..." : "Save Profile"}
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="p-4 text-sm text-slate-500">No user data.</div>
+                            )}
                         </div>
 
-                        {loading ? (
-                            <div className="p-4">
-                                {Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={i} className="mb-2 h-10 animate-pulse rounded-md bg-slate-200" />
-                                ))}
+                        {/* Company Section */}
+                        <div>
+                            <div className="mb-3">
+                                <h2 className="text-lg font-semibold text-slate-900">Company</h2>
+                                <p className="text-sm text-slate-600">Manage your company information</p>
                             </div>
-                        ) : me ? (
-                            <form onSubmit={onSave} className="p-4 space-y-4">
-                                <div>
-                                    <label className="mb-1 block text-sm text-slate-600">Name</label>
-                                    <input
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full rounded-md border px-3 py-2"
-                                        required
-                                    />
-                                </div>
+                            <CompanySettings />
+                        </div>
 
-                                <div>
-                                    <label className="mb-1 block text-sm text-slate-600">Email</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full rounded-md border px-3 py-2"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-end gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={onLogout}
-                                        className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-rose-700 hover:bg-rose-100"
-                                    >
-                                        Log out
-                                    </button>
-                                    <button
-                                        disabled={saving}
-                                        className="rounded-md bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50"
-                                    >
-                                        {saving ? "Saving..." : "Save changes"}
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div className="p-4 text-sm text-slate-500">No user data.</div>
-                        )}
+                        {/* Business Card Section */}
+                        <div>
+                            <div className="mb-3">
+                                <h2 className="text-lg font-semibold text-slate-900">Business Card</h2>
+                                <p className="text-sm text-slate-600">Create and manage your digital business card</p>
+                            </div>
+                            <BusinessCardSettings />
+                        </div>
                     </div>
                 </div>
             </main>
