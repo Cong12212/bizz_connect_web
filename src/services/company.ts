@@ -11,8 +11,12 @@ export interface Company {
     email?: string;
     phone?: string;
     address?: string;
+    address_line1?: string;
+    address_line2?: string;
     city?: string;
+    state?: string;
     country?: string;
+    postal_code?: string;
     logo?: string;
     plan: string;
     status: string;
@@ -29,8 +33,12 @@ export interface CompanyFormData {
     email?: string;
     phone?: string;
     address?: string;
+    address_line1?: string;
+    address_line2?: string;
     city?: string;
+    state?: string;
     country?: string;
+    postal_code?: string;
     logo?: File;
 }
 

@@ -4,6 +4,7 @@ export interface BusinessCard {
     id: number;
     user_id: number;
     company_id?: number;
+    slug?: string;
     full_name: string;
     job_title?: string;
     department?: string;
@@ -12,11 +13,19 @@ export interface BusinessCard {
     mobile?: string;
     website?: string;
     address?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
     linkedin?: string;
     facebook?: string;
     twitter?: string;
     avatar?: string;
     notes?: string;
+    is_public?: boolean;
+    view_count?: number;
     created_at: string;
     updated_at: string;
     company?: any;
@@ -32,11 +41,40 @@ export interface BusinessCardFormData {
     mobile?: string;
     website?: string;
     address?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
     linkedin?: string;
     facebook?: string;
     twitter?: string;
     avatar?: File;
     notes?: string;
+    is_public?: boolean;
+}
+
+export interface PublicBusinessCard {
+    id: number;
+    slug: string;
+    full_name: string;
+    job_title?: string;
+    email: string;
+    phone?: string;
+    mobile?: string;
+    website?: string;
+    linkedin?: string;
+    facebook?: string;
+    twitter?: string;
+    avatar?: string;
+    company?: {
+        name: string;
+        industry?: string;
+        website?: string;
+        logo?: string;
+    };
+    view_count: number;
 }
 
 export async function getBusinessCard(): Promise<BusinessCard | null> {
@@ -55,6 +93,8 @@ export async function saveBusinessCard(formData: BusinessCardFormData): Promise<
         if (value !== undefined && value !== null) {
             if (value instanceof File) {
                 fd.append(key, value);
+            } else if (typeof value === 'boolean') {
+                fd.append(key, value ? '1' : '0');
             } else {
                 fd.append(key, String(value));
             }
@@ -68,4 +108,14 @@ export async function saveBusinessCard(formData: BusinessCardFormData): Promise<
 
 export async function deleteBusinessCard(): Promise<void> {
     await api.delete("/business-card");
+}
+
+export async function getPublicBusinessCard(slug: string): Promise<PublicBusinessCard> {
+    const { data } = await api.get(`/business-card/public/${slug}`);
+    return data;
+}
+
+export async function connectWithCard(slug: string): Promise<any> {
+    const { data } = await api.post(`/business-card/connect/${slug}`);
+    return data;
 }

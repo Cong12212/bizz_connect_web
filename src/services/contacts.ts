@@ -2,22 +2,29 @@ import { apiFetch, apiFetchBlob } from "../lib/api";
 
 export type Tag = { id: number; name: string };
 
-export type Contact = {
+export interface Contact {
     id: number;
+    owner_user_id: number;
     name: string;
-    job_title?: string | null;
-    company?: string | null;
-    email?: string | null;
-    phone?: string | null;
-    address?: string | null;
-    notes?: string | null;
-    linkedin_url?: string | null;
-    website_url?: string | null;
-    source?: string | null;
+    company?: string;
+    job_title?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
+    notes?: string;
+    linkedin_url?: string;
+    website_url?: string;
+    source?: string;
     tags?: Tag[];
-    created_at?: string;
-    updated_at?: string;
-};
+    created_at: string;
+    updated_at: string;
+}
 
 export type Paginated<T> = {
     data: T[];

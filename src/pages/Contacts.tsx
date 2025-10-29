@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import AppNav from "../components/AppNav";
 import useDebounced from "../hooks/useDebounced";
 import { useAppSelector } from "../utils/hooks";
@@ -20,6 +20,7 @@ import ImportContactsModal from "../components/contacts/ImportContactsModal";
 import ExportContactsModal from "../components/contacts/ExportContactsModal";
 
 export default function ContactsPage() {
+    const location = useLocation();
     const nav = useNavigate();
     const { id: idParam } = useParams();            // /contacts/:id
     const routeId = idParam ? parseInt(idParam, 10) : null;
@@ -100,6 +101,19 @@ export default function ContactsPage() {
 
         if (isMobile) setOpenDetailMobile(true);
     }, [selectedId, token, data.items]);
+
+    // Handle prefilled data from business card
+    useEffect(() => {
+        const state = location.state as any;
+        if (state?.openCreateSheet && state?.prefillData) {
+            // Set prefilled data as edit target
+            setEditTarget(state.prefillData);
+            setOpenEdit(true);
+
+            // Clear state immediately
+            nav(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, nav, location.pathname]);
 
     const list = useMemo(() => data.items, [data.items]);
 

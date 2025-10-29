@@ -14,11 +14,15 @@ import NotificationsPage from './pages/Notifications';
 import SettingsPage from './pages/Setting';
 import VerifyOnlyRoute from './components/VerifyOnlyRoute';
 import NotFoundPage from './pages/NotFound';
+import PublicBusinessCardPage from "./pages/PublicBusinessCard";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Public routes */}
+      <Route path="/card/:slug" element={<PublicBusinessCardPage />} />
 
       {/* Chỉ KHÁCH (không token) */}
       <Route path="/auth" element={<GuestRoute><Auth /></GuestRoute>} />

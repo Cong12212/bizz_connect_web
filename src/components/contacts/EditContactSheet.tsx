@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import type { Contact } from '../../services/contacts';
 import { createContact, updateContact } from '../../services/contacts';
 import { Spinner, useToast } from '../ui/Toast';
+import CountrySelect from '../settings/CountrySelect';
+import StateSelect from '../settings/StateSelect';
 
 export default function EditContactSheet({
     open, onClose, token, contact, onSaved,
@@ -12,7 +14,7 @@ export default function EditContactSheet({
     open: boolean;
     onClose: () => void;
     token: string;
-    contact: Contact | null; // null => create
+    contact: Contact | null;
     onSaved: (c: Contact) => void;
 }) {
     const toast = useToast();
@@ -39,6 +41,12 @@ export default function EditContactSheet({
             email: form.email || null,
             phone: form.phone || null,
             address: form.address || null,
+            address_line1: form.address_line1 || null,
+            address_line2: form.address_line2 || null,
+            city: form.city || null,
+            state: form.state || null,
+            country: form.country || null,
+            postal_code: form.postal_code || null,
             notes: form.notes || null,
             linkedin_url: form.linkedin_url || null,
             website_url: form.website_url || null,
@@ -56,18 +64,15 @@ export default function EditContactSheet({
 
         setSaving(true);
         try {
-            const saved = contact
+            const saved = contact?.id
                 ? await updateContact(contact.id, payload, token)
                 : await createContact(payload, token);
 
-            toast.success(contact ? 'Contact changes saved.' : 'New contact created successfully.');
+            toast.success(contact?.id ? 'Contact changes saved.' : 'New contact created successfully.');
             onSaved(saved);
         } catch (e: any) {
-            const msg =
-                e?.response?.data?.message ||
-                e?.message ||
-                'Unable to save contact. Please try again.';
-            toast.error(msg, 'API 422');
+            const msg = e?.response?.data?.message || e?.message || 'Unable to save contact. Please try again.';
+            toast.error(msg, 'API Error');
         } finally {
             setSaving(false);
         }
@@ -91,7 +96,7 @@ export default function EditContactSheet({
 
                 <div className="mb-4 flex items-center justify-between">
                     <div className="text-lg font-semibold">
-                        {contact ? 'Edit contact' : 'New contact'}
+                        {contact?.id ? 'Edit contact' : 'New contact'}
                     </div>
                     <button
                         onClick={onClose}
@@ -103,13 +108,66 @@ export default function EditContactSheet({
                     </button>
                 </div>
 
+                {/* Show source badge if from business card */}
+                {form.source === 'business_card' && (
+                    <div className="mb-4 rounded-lg bg-blue-50 border border-blue-200 p-3">
+                        <p className="text-xs text-blue-900">
+                            📇 <span className="font-medium">Imported from Business Card</span>
+                        </p>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-4">
                     <Input label="Name" value={form.name || ''} onChange={(v) => set('name', v)} required disabled={saving} />
                     <Input label="Job Title" value={form.job_title || ''} onChange={(v) => set('job_title', v)} disabled={saving} />
                     <Input label="Company" value={form.company || ''} onChange={(v) => set('company', v)} disabled={saving} />
                     <Input label="Email" type="email" value={form.email || ''} onChange={(v) => set('email', v)} disabled={saving} />
                     <Input label="Phone" value={form.phone || ''} onChange={(v) => set('phone', v)} disabled={saving} />
-                    <Input label="Address" value={form.address || ''} onChange={(v) => set('address', v)} disabled={saving} />
+
+                    <div className="border-t pt-4 mt-2">
+                        <div className="mb-2 text-sm font-medium">Address</div>
+                        <div className="space-y-3">
+                            <Input
+                                label="Address Line 1"
+                                value={form.address_line1 || ''}
+                                onChange={(v) => set('address_line1', v)}
+                                placeholder="Street address, P.O. box"
+                                disabled={saving}
+                            />
+                            <Input
+                                label="Address Line 2"
+                                value={form.address_line2 || ''}
+                                onChange={(v) => set('address_line2', v)}
+                                placeholder="Apartment, suite, unit"
+                                disabled={saving}
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-sm text-slate-600">Country</label>
+                                    <CountrySelect
+                                        value={form.country || ''}
+                                        onChange={(v) => {
+                                            set('country', v);
+                                            set('state', '');
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm text-slate-600">State/Province</label>
+                                    <StateSelect
+                                        country={form.country}
+                                        value={form.state || ''}
+                                        onChange={(v) => set('state', v)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input label="City" value={form.city || ''} onChange={(v) => set('city', v)} disabled={saving} />
+                                <Input label="Postal Code" value={form.postal_code || ''} onChange={(v) => set('postal_code', v)} disabled={saving} />
+                            </div>
+                        </div>
+                    </div>
+
                     <TextArea label="Notes" value={form.notes || ''} onChange={(v) => set('notes', v)} disabled={saving} />
 
                     <div className="mt-2 text-sm font-medium">Links</div>

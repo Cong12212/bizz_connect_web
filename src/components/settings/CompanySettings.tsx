@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { getCompany, saveCompany, deleteCompany, type Company, type CompanyFormData } from "@/services/company";
 import { TrashIcon, BuildingOfficeIcon } from "@heroicons/react/24/outline";
+import CountrySelect from "./CountrySelect";
+import StateSelect from "./StateSelect";
 
 export default function CompanySettings() {
     const [company, setCompany] = useState<Company | null>(null);
@@ -15,9 +17,12 @@ export default function CompanySettings() {
         website: "",
         email: "",
         phone: "",
-        address: "",
+        address_line1: "",
+        address_line2: "",
         city: "",
+        state: "",
         country: "",
+        postal_code: "",
     });
 
     useEffect(() => {
@@ -38,9 +43,12 @@ export default function CompanySettings() {
                     website: data.website || "",
                     email: data.email || "",
                     phone: data.phone || "",
-                    address: data.address || "",
+                    address_line1: data.address_line1 || "",
+                    address_line2: data.address_line2 || "",
                     city: data.city || "",
+                    state: data.state || "",
                     country: data.country || "",
+                    postal_code: data.postal_code || "",
                 });
             }
         } catch (e: any) {
@@ -77,9 +85,12 @@ export default function CompanySettings() {
                 website: "",
                 email: "",
                 phone: "",
-                address: "",
+                address_line1: "",
+                address_line2: "",
                 city: "",
+                state: "",
                 country: "",
+                postal_code: "",
             });
         } catch (e: any) {
             alert(e?.message || "Failed to delete");
@@ -171,6 +182,63 @@ export default function CompanySettings() {
                         rows={3}
                     />
                 </div>
+
+                {/* Address Section */}
+                <div className="border-t pt-4 mt-4">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Business Address</h4>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                            <label className="mb-1 block text-sm font-medium">Address Line 1</label>
+                            <input
+                                value={formData.address_line1}
+                                onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                                className="w-full rounded-md border px-3 py-2"
+                                placeholder="Street address, P.O. box"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="mb-1 block text-sm font-medium">Address Line 2</label>
+                            <input
+                                value={formData.address_line2}
+                                onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
+                                className="w-full rounded-md border px-3 py-2"
+                                placeholder="Apartment, suite, unit, building, floor, etc."
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">Country</label>
+                            <CountrySelect
+                                value={formData.country}
+                                onChange={(value) => setFormData({ ...formData, country: value, state: "" })}
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">State/Province</label>
+                            <StateSelect
+                                country={formData.country}
+                                value={formData.state}
+                                onChange={(value) => setFormData({ ...formData, state: value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">City</label>
+                            <input
+                                value={formData.city}
+                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                className="w-full rounded-md border px-3 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">Postal Code</label>
+                            <input
+                                value={formData.postal_code}
+                                onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                                className="w-full rounded-md border px-3 py-2"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex justify-end border-t pt-4">
                     <button
                         type="submit"
