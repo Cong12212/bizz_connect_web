@@ -1,44 +1,44 @@
 import React, { useEffect, useState } from "react";
-import { getStates, type State } from "@/services/location";
+import { getCities, type City } from "@/services/location";
 
-export default function StateSelect({
-    country,
+export default function CitySelect({
+    state,
     value,
     onChange
 }: {
-    country?: string;
+    state?: string;
     value?: string;
     onChange: (value: string) => void;
 }) {
-    const [states, setStates] = useState<State[]>([]);
+    const [cities, setCities] = useState<City[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (country) {
-            loadStates();
+        if (state) {
+            loadCities();
         } else {
-            setStates([]);
+            setCities([]);
         }
-    }, [country]);
+    }, [state]);
 
-    async function loadStates() {
+    async function loadCities() {
         try {
             setLoading(true);
-            const data = await getStates(country!);
-            setStates(data);
+            const data = await getCities(state!);
+            setCities(data);
         } catch (e) {
-            console.error('Failed to load states:', e);
-            setStates([]);
+            console.error('Failed to load cities:', e);
+            setCities([]);
         } finally {
             setLoading(false);
         }
     }
 
-    if (!country) {
+    if (!state) {
         return (
             <input
                 disabled
-                placeholder="Select country first"
+                placeholder="Select state first"
                 className="w-full rounded-md border px-3 py-2 bg-slate-100"
             />
         );
@@ -58,10 +58,10 @@ export default function StateSelect({
             onChange={(e) => onChange(e.target.value)}
             className="w-full rounded-md border px-3 py-2"
         >
-            <option value="">Select State/City</option>
-            {states.map((state) => (
-                <option key={state.id} value={state.code}>
-                    {state.name}
+            <option value="">Select City/District</option>
+            {cities.map((city) => (
+                <option key={city.id} value={city.code}>
+                    {city.name}
                 </option>
             ))}
         </select>

@@ -3,6 +3,7 @@ import { getCompany, saveCompany, deleteCompany, type Company, type CompanyFormD
 import { TrashIcon, BuildingOfficeIcon } from "@heroicons/react/24/outline";
 import CountrySelect from "./CountrySelect";
 import StateSelect from "./StateSelect";
+import CitySelect from "./CitySelect";
 
 export default function CompanySettings() {
     const [company, setCompany] = useState<Company | null>(null);
@@ -22,7 +23,6 @@ export default function CompanySettings() {
         city: "",
         state: "",
         country: "",
-        postal_code: "",
     });
 
     useEffect(() => {
@@ -48,7 +48,6 @@ export default function CompanySettings() {
                     city: data.city || "",
                     state: data.state || "",
                     country: data.country || "",
-                    postal_code: data.postal_code || "",
                 });
             }
         } catch (e: any) {
@@ -90,7 +89,6 @@ export default function CompanySettings() {
                 city: "",
                 state: "",
                 country: "",
-                postal_code: "",
             });
         } catch (e: any) {
             alert(e?.message || "Failed to delete");
@@ -186,55 +184,49 @@ export default function CompanySettings() {
                 {/* Address Section */}
                 <div className="border-t pt-4 mt-4">
                     <h4 className="text-sm font-semibold text-slate-900 mb-3">Business Address</h4>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="md:col-span-2">
-                            <label className="mb-1 block text-sm font-medium">Address Line 1</label>
+                    <div className="space-y-3">
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">Street Address</label>
                             <input
                                 value={formData.address_line1}
                                 onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
-                                placeholder="Street address, P.O. box"
+                                placeholder="123 Nguyễn Huệ"
                             />
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="mb-1 block text-sm font-medium">Address Line 2</label>
+                        <div>
+                            <label className="mb-1 block text-sm font-medium">Apartment, Suite, Floor (Optional)</label>
                             <input
                                 value={formData.address_line2}
                                 onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
-                                placeholder="Apartment, suite, unit, building, floor, etc."
+                                placeholder="Tầng 5, Phòng 501"
                             />
                         </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium">Country</label>
-                            <CountrySelect
-                                value={formData.country}
-                                onChange={(value) => setFormData({ ...formData, country: value, state: "" })}
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium">State/Province</label>
-                            <StateSelect
-                                country={formData.country}
-                                value={formData.state}
-                                onChange={(value) => setFormData({ ...formData, state: value })}
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium">City</label>
-                            <input
-                                value={formData.city}
-                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                className="w-full rounded-md border px-3 py-2"
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium">Postal Code</label>
-                            <input
-                                value={formData.postal_code}
-                                onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                                className="w-full rounded-md border px-3 py-2"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">Country</label>
+                                <CountrySelect
+                                    value={formData.country}
+                                    onChange={(value) => setFormData({ ...formData, country: value, state: "", city: "" })}
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">Province/State</label>
+                                <StateSelect
+                                    country={formData.country}
+                                    value={formData.state}
+                                    onChange={(value) => setFormData({ ...formData, state: value, city: "" })}
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">City/District</label>
+                                <CitySelect
+                                    state={formData.state}
+                                    value={formData.city}
+                                    onChange={(value) => setFormData({ ...formData, city: value })}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

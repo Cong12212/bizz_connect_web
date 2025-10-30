@@ -1,23 +1,5 @@
-import React from "react";
-
-const COUNTRIES = [
-    { code: "VN", name: "Vietnam" },
-    { code: "US", name: "United States" },
-    { code: "GB", name: "United Kingdom" },
-    { code: "CN", name: "China" },
-    { code: "JP", name: "Japan" },
-    { code: "KR", name: "South Korea" },
-    { code: "TH", name: "Thailand" },
-    { code: "SG", name: "Singapore" },
-    { code: "MY", name: "Malaysia" },
-    { code: "ID", name: "Indonesia" },
-    { code: "PH", name: "Philippines" },
-    { code: "AU", name: "Australia" },
-    { code: "CA", name: "Canada" },
-    { code: "DE", name: "Germany" },
-    { code: "FR", name: "France" },
-    // Add more countries as needed
-].sort((a, b) => a.name.localeCompare(b.name));
+import React, { useEffect, useState } from "react";
+import { getCountries, type Country } from "@/services/location";
 
 export default function CountrySelect({
     value,
@@ -26,6 +8,32 @@ export default function CountrySelect({
     value?: string;
     onChange: (value: string) => void;
 }) {
+    const [countries, setCountries] = useState<Country[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadCountries();
+    }, []);
+
+    async function loadCountries() {
+        try {
+            const data = await getCountries();
+            setCountries(data);
+        } catch (e) {
+            console.error("Failed to load countries:", e);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) {
+        return (
+            <select disabled className="w-full rounded-md border px-3 py-2 bg-slate-100">
+                <option>Loading...</option>
+            </select>
+        );
+    }
+
     return (
         <select
             value={value || ""}
@@ -33,7 +41,7 @@ export default function CountrySelect({
             className="w-full rounded-md border px-3 py-2"
         >
             <option value="">Select Country</option>
-            {COUNTRIES.map((country) => (
+            {countries.map((country) => (
                 <option key={country.code} value={country.code}>
                     {country.name}
                 </option>

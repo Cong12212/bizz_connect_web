@@ -8,19 +8,38 @@ export default function ContactDetail({
     onEdit: () => void;
     onUpdated: (c: Contact) => void;
 }) {
-    const fields: Array<{ key: keyof Contact; label: string; render?: (v: any) => React.ReactNode }> = [
+    // Helper để format address từ nested object
+    const formatAddress = (contact: Contact) => {
+        if (!contact.address) return null;
+        const parts = [
+            contact.address.address_detail,
+            contact.address.city?.name,
+            contact.address.state?.name,
+            contact.address.country?.name,
+        ].filter(Boolean);
+        return parts.length ? parts.join(', ') : null;
+    };
+
+    const fields: Array<{ key: keyof Contact | 'formatted_address'; label: string; render?: (v: any) => React.ReactNode }> = [
         { key: "job_title", label: "Job Title" },
         { key: "company", label: "Company" },
         { key: "email", label: "Email", render: (v) => (v ? <a className="underline" href={`mailto:${v}`}>{v}</a> : null) },
         { key: "phone", label: "Phone", render: (v) => (v ? <a className="underline" href={`tel:${v}`}>{v}</a> : null) },
-        { key: "address", label: "Address" },
+        { key: "formatted_address", label: "Address", render: () => formatAddress(contact) },
         { key: "notes", label: "Notes" },
         { key: "linkedin_url", label: "LinkedIn", render: (v) => (v ? <a className="underline" target="_blank" href={v}>{v}</a> : null) },
         { key: "website_url", label: "Website", render: (v) => (v ? <a className="underline" target="_blank" href={v}>{v}</a> : null) },
     ];
 
-    const shown = fields.filter((f) => (contact as any)[f.key]);
-    const missing = fields.filter((f) => !(contact as any)[f.key]);
+    const shown = fields.filter((f) => {
+        if (f.key === 'formatted_address') return !!formatAddress(contact);
+        return !!(contact as any)[f.key];
+    });
+
+    const missing = fields.filter((f) => {
+        if (f.key === 'formatted_address') return !formatAddress(contact);
+        return !(contact as any)[f.key];
+    });
 
     return (
         <div className="mx-auto max-w-2xl px-4 md:px-0">

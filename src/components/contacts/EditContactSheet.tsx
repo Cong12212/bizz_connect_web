@@ -7,6 +7,7 @@ import { createContact, updateContact } from '../../services/contacts';
 import { Spinner, useToast } from '../ui/Toast';
 import CountrySelect from '../settings/CountrySelect';
 import StateSelect from '../settings/StateSelect';
+import CitySelect from '../settings/CitySelect';
 
 export default function EditContactSheet({
     open, onClose, token, contact, onSaved,
@@ -18,14 +19,25 @@ export default function EditContactSheet({
     onSaved: (c: Contact) => void;
 }) {
     const toast = useToast();
-    const [form, setForm] = useState<Partial<Contact>>({});
+    const [form, setForm] = useState<any>({});
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        setForm(contact || {});
+        if (contact) {
+            // Map address data từ nested object sang form fields
+            setForm({
+                ...contact,
+                address_detail: contact.address?.address_detail || '',
+                city: contact.address?.city?.code || '',
+                state: contact.address?.state?.code || '',
+                country: contact.address?.country?.code || '',
+            });
+        } else {
+            setForm({});
+        }
     }, [contact, open]);
 
-    const set = (k: keyof Contact, v: any) => setForm((f) => ({ ...f, [k]: v }));
+    const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
     // client-side validate URL lightly to avoid annoying 422
     function okURL(v?: string | null) {
@@ -40,13 +52,10 @@ export default function EditContactSheet({
             company: form.company || null,
             email: form.email || null,
             phone: form.phone || null,
-            address: form.address || null,
-            address_line1: form.address_line1 || null,
-            address_line2: form.address_line2 || null,
+            address_detail: form.address_detail || null,
             city: form.city || null,
             state: form.state || null,
             country: form.country || null,
-            postal_code: form.postal_code || null,
             notes: form.notes || null,
             linkedin_url: form.linkedin_url || null,
             website_url: form.website_url || null,
@@ -128,42 +137,43 @@ export default function EditContactSheet({
                         <div className="mb-2 text-sm font-medium">Address</div>
                         <div className="space-y-3">
                             <Input
-                                label="Address Line 1"
-                                value={form.address_line1 || ''}
-                                onChange={(v) => set('address_line1', v)}
-                                placeholder="Street address, P.O. box"
+                                label="Street Address"
+                                value={form.address_detail || ''}
+                                onChange={(v) => set('address_detail', v)}
+                                placeholder="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1"
                                 disabled={saving}
                             />
-                            <Input
-                                label="Address Line 2"
-                                value={form.address_line2 || ''}
-                                onChange={(v) => set('address_line2', v)}
-                                placeholder="Apartment, suite, unit"
-                                disabled={saving}
-                            />
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <label className="mb-1 block text-sm text-slate-600">Country</label>
                                     <CountrySelect
-                                        value={form.country || ''}
+                                        value={form.country ?? ''}
                                         onChange={(v) => {
                                             set('country', v);
                                             set('state', '');
+                                            set('city', '');
                                         }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-sm text-slate-600">State/Province</label>
+                                    <label className="mb-1 block text-sm text-slate-600">Province/State</label>
                                     <StateSelect
-                                        country={form.country}
-                                        value={form.state || ''}
-                                        onChange={(v) => set('state', v)}
+                                        country={form.country ?? ''}
+                                        value={form.state ?? ''}
+                                        onChange={(v) => {
+                                            set('state', v);
+                                            set('city', '');
+                                        }}
                                     />
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <Input label="City" value={form.city || ''} onChange={(v) => set('city', v)} disabled={saving} />
-                                <Input label="Postal Code" value={form.postal_code || ''} onChange={(v) => set('postal_code', v)} disabled={saving} />
+                                <div>
+                                    <label className="mb-1 block text-sm text-slate-600">City/District</label>
+                                    <CitySelect
+                                        state={form.state ?? ''}
+                                        value={form.city ?? ''}
+                                        onChange={(v) => set('city', v)}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -4,26 +4,44 @@ export type Tag = { id: number; name: string };
 
 export interface Contact {
     id: number;
-    owner_user_id: number;
     name: string;
-    company?: string;
-    job_title?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    address_line1?: string;
-    address_line2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postal_code?: string;
-    notes?: string;
-    linkedin_url?: string;
-    website_url?: string;
-    source?: string;
-    tags?: Tag[];
-    created_at: string;
-    updated_at: string;
+    job_title?: string | null;
+    company?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    notes?: string | null;
+    linkedin_url?: string | null;
+    website_url?: string | null;
+    source?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    address_id?: number | null;
+    address?: {
+        id: number;
+        address_detail: string | null;
+        city_id: number | null;
+        state_id: number | null;
+        country_id: number | null;
+        city?: {
+            id: number;
+            code: string;
+            name: string;
+        } | null;
+        state?: {
+            id: number;
+            code: string;
+            name: string;
+        } | null;
+        country?: {
+            id: number;
+            code: string;
+            name: string;
+        } | null;
+    } | null;
+    tags?: Array<{
+        id: number;
+        name: string;
+    }>;
 }
 
 export type Paginated<T> = {
