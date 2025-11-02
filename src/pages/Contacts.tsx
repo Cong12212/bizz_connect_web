@@ -36,6 +36,7 @@ export default function ContactsPage() {
     const [page, setPage] = useState(1);
     const [per] = useState(30);
     const [sort, setSort] = useState<"name" | "-name" | "id" | "-id">("name");
+    const prefillData = location.state?.prefillData || null;
 
     const [data, setData] = useState<{ items: Contact[]; total: number; last: number }>({
         items: [],
@@ -277,6 +278,7 @@ export default function ContactsPage() {
                             : { ...d, items: [c, ...d.items] };
                     });
                 }}
+                initialForm={prefillData}
             />
 
             {/* Import / Export */}

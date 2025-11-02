@@ -10,13 +10,14 @@ import StateSelect from '../settings/StateSelect';
 import CitySelect from '../settings/CitySelect';
 
 export default function EditContactSheet({
-    open, onClose, token, contact, onSaved,
+    open, onClose, token, contact, onSaved, initialForm,
 }: {
     open: boolean;
     onClose: () => void;
     token: string;
     contact: Contact | null;
     onSaved: (c: Contact) => void;
+    initialForm?: Partial<Record<string, any>>;
 }) {
     const toast = useToast();
     const [form, setForm] = useState<any>({});
@@ -24,18 +25,24 @@ export default function EditContactSheet({
 
     useEffect(() => {
         if (contact) {
-            // Map address data từ nested object sang form fields
             setForm({
                 ...contact,
-                address_detail: contact.address?.address_detail || '',
-                city: contact.address?.city?.code || '',
-                state: contact.address?.state?.code || '',
-                country: contact.address?.country?.code || '',
+                address_detail: contact.address?.address_detail || "",
+                city: contact.address?.city?.code || "",
+                state: contact.address?.state?.code || "",
+                country: contact.address?.country?.code || "",
             });
         } else {
-            setForm({});
+            // ⬇️ nếu tạo mới, dùng prefill từ navigate state (nếu có)
+            setForm({
+                ...(initialForm || {}),
+                address_detail: initialForm?.address_detail ?? "",
+                country: initialForm?.country ?? "",
+                state: initialForm?.state ?? "",
+                city: initialForm?.city ?? "",
+            });
         }
-    }, [contact, open]);
+    }, [contact, open, initialForm]);
 
     const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 

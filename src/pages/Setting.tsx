@@ -10,8 +10,10 @@ import { setAuthToken } from "@/services/api";
 import { logout } from "@/features/auth/authSlice";
 import CompanySettings from "@/components/settings/CompanySettings";
 import BusinessCardSettings from "@/components/settings/BusinessCardSettings";
+import { useToast } from "@/components/ui/Toast";
 
 export default function SettingsPage() {
+    const toast = useToast();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
 
@@ -26,6 +28,11 @@ export default function SettingsPage() {
     const [me, setMe] = useState<Me | null>(null);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [addressDetail, setAddressDetail] = useState("");
+    const [city, setCity] = useState("");
+    const [state, setState] = useState("");
+    const [country, setCountry] = useState("");
 
     useEffect(() => {
         let alive = true;
@@ -37,6 +44,11 @@ export default function SettingsPage() {
                 setMe(u);
                 setName(u.name ?? "");
                 setEmail(u.email ?? "");
+                setPhone(u.phone ?? "");
+                setAddressDetail(u.address?.address_detail ?? "");
+                setCity(u.address?.city?.code ?? "");
+                setState(u.address?.state?.code ?? "");
+                setCountry(u.address?.country?.code ?? "");
             })
             .catch((e) => setErr(e?.message || "Failed to load user"))
             .finally(() => setLoading(false));
@@ -50,9 +62,17 @@ export default function SettingsPage() {
         setSaving(true);
         setErr(null);
         try {
-            const updated = await updateMe({ name, email });
+            const updated = await updateMe({
+                name,
+                email,
+                phone,
+                address_detail: addressDetail,
+                city,
+                state,
+                country,
+            });
             setMe(updated);
-            alert("Profile updated!");
+            toast.success("Profile updated!");
         } catch (e: any) {
             setErr(e?.message || "Save failed");
         } finally {
@@ -93,7 +113,7 @@ export default function SettingsPage() {
 
                             {loading ? (
                                 <div className="p-4 space-y-3">
-                                    {Array.from({ length: 3 }).map((_, i) => (
+                                    {Array.from({ length: 6 }).map((_, i) => (
                                         <div key={i} className="h-10 animate-pulse rounded-md bg-slate-200" />
                                     ))}
                                 </div>

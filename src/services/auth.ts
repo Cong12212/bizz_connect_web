@@ -9,14 +9,49 @@ export type Me = {
     id: number;
     name: string;
     email: string;
+    phone?: string | null;
+    avatar_url?: string | null;
+    locale?: string | null;
+    timezone?: string | null;
+    company_id?: number | null;
+    business_card_id?: number | null;
+    address_id?: number | null;
     verified?: boolean;
     created_at?: string;
     updated_at?: string;
+    address?: {
+        id: number;
+        address_detail: string | null;
+        city_id: number | null;
+        state_id: number | null;
+        country_id: number | null;
+        city?: {
+            id: number;
+            code: string;
+            name: string;
+        } | null;
+        state?: {
+            id: number;
+            code: string;
+            name: string;
+        } | null;
+        country?: {
+            id: number;
+            code: string;
+            name: string;
+        } | null;
+    } | null;
 };
 
 export type UpdateMePayload = {
     name?: string;
-    // mở rộng thêm field nào BE cho phép (company, avatar, v.v.)
+    email?: string;
+    phone?: string;
+    address_detail?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    password?: string;
 };
 
 function handleApiError(e: any): never {
@@ -52,7 +87,7 @@ export async function getMe(): Promise<Me> {
 
 // BE doesn't have separate update profile endpoint -> usually PATCH /auth/me.
 // If you use /user/update then modify accordingly; here we use /auth/me (PATCH).
-export async function updateMe(payload: Partial<Pick<Me, "name" | "email">> & { password?: string }) {
+export async function updateMe(payload: UpdateMePayload): Promise<Me> {
     const { data } = await api.patch("/auth/me", payload); // Create route if not exists
     return data as Me;
 }
@@ -89,5 +124,13 @@ export async function resendPasswordCode(email: string) {
         return res.data as { ok: true };
     } catch (e) {
         handleApiError(e);
+    }
+}
+
+export async function logout() {
+    try {
+        await api.post("/auth/logout");
+    } catch (e) {
+        // Ignore logout errors
     }
 }

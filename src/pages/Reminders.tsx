@@ -76,20 +76,7 @@ function StatusBadge({ status }: { status: ReminderStatus }) {
     );
 }
 
-function StatusIcon({ status }: { status: ReminderStatus }) {
-    switch (status) {
-        case 'pending':
-            return <Clock className="h-4 w-4 text-amber-600" />;
-        case 'done':
-            return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-        case 'skipped':
-            return <MinusCircle className="h-4 w-4 text-slate-600" />;
-        case 'cancelled':
-            return <XCircle className="h-4 w-4 text-rose-600" />;
-        default:
-            return <Clock className="h-4 w-4 text-slate-400" />;
-    }
-}
+
 
 /** A tiny popover used for "+N more" */
 function MorePopover({
@@ -371,7 +358,7 @@ export default function RemindersPage() {
                                 setStatus(e.target.value as any);
                                 setPage(1);
                             }}
-                            className="rounded-md border bg-white px-3 py-2 text-sm"
+                            className="h-10 rounded-md border bg-white px-3 py-2 text-sm"
                         >
                             <option value="">All status</option>
                             <option value="pending">pending</option>
@@ -389,7 +376,7 @@ export default function RemindersPage() {
                                     setFrom(e.target.value);
                                     setPage(1);
                                 }}
-                                className="rounded-md border px-2 py-1"
+                                className="h-10 rounded-md border px-3 py-2 text-sm"
                             />
                             <span>To</span>
                             <input
@@ -399,14 +386,14 @@ export default function RemindersPage() {
                                     setTo(e.target.value);
                                     setPage(1);
                                 }}
-                                className="rounded-md border px-2 py-1"
+                                className="h-10 rounded-md border px-3 py-2 text-sm"
                             />
                         </div>
 
                         <div className="ml-auto flex items-center gap-2">
                             <button
                                 onClick={() => setFormOpen({ mode: 'create' })}
-                                className="rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
+                                className="h-10 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800"
                             >
                                 New reminder
                             </button>

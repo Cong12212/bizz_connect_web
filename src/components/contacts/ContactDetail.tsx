@@ -11,12 +11,20 @@ export default function ContactDetail({
     // Helper để format address từ nested object
     const formatAddress = (contact: Contact) => {
         if (!contact.address) return null;
+
+        // Ưu tiên dùng full_address nếu có (từ backend)
+        if (contact.address.full_address) {
+            return contact.address.full_address;
+        }
+
+        // Fallback: tự build từ các field
         const parts = [
             contact.address.address_detail,
             contact.address.city?.name,
             contact.address.state?.name,
             contact.address.country?.name,
         ].filter(Boolean);
+
         return parts.length ? parts.join(', ') : null;
     };
 

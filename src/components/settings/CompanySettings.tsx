@@ -1,33 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { getCompany, saveCompany, deleteCompany, type Company, type CompanyFormData } from "@/services/company";
-import { TrashIcon, BuildingOfficeIcon } from "@heroicons/react/24/outline";
+import { TrashIcon } from "@heroicons/react/24/outline";
 import CountrySelect from "./CountrySelect";
 import StateSelect from "./StateSelect";
 import CitySelect from "./CitySelect";
+import { useToast } from "@/components/ui/Toast";
 
 export default function CompanySettings() {
     const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const toast = useToast();
+
     const [formData, setFormData] = useState<CompanyFormData>({
         name: "",
-        domain: "",
-        industry: "",
-        description: "",
-        website: "",
-        email: "",
+        tax_code: "",
         phone: "",
-        address_line1: "",
-        address_line2: "",
-        city: "",
-        state: "",
+        email: "",
+        website: "",
+        description: "",
+        address_detail: "",
         country: "",
+        state: "",
+        city: "",
     });
 
-    useEffect(() => {
-        loadCompany();
-    }, []);
+    useEffect(() => { loadCompany(); }, []);
 
     async function loadCompany() {
         try {
@@ -37,21 +35,17 @@ export default function CompanySettings() {
             if (data) {
                 setFormData({
                     name: data.name,
-                    domain: data.domain || "",
-                    industry: data.industry || "",
-                    description: data.description || "",
-                    website: data.website || "",
-                    email: data.email || "",
+                    tax_code: data.tax_code || "",
                     phone: data.phone || "",
-                    address_line1: data.address_line1 || "",
-                    address_line2: data.address_line2 || "",
-                    city: data.city || "",
-                    state: data.state || "",
-                    country: data.country || "",
+                    email: data.email || "",
+                    website: data.website || "",
+                    description: data.description || "",
+                    address_detail: data.address?.address_detail || "",
+                    country: data.address?.country?.code || "",
+                    state: data.address?.state?.code || "",
+                    city: data.address?.city?.code || "",
                 });
             }
-        } catch (e: any) {
-            setError(e?.message || "Failed to load company");
         } finally {
             setLoading(false);
         }
@@ -63,9 +57,9 @@ export default function CompanySettings() {
             setSaving(true);
             const saved = await saveCompany(formData);
             setCompany(saved);
-            alert("Company saved!");
+            toast.success("Company saved!");
         } catch (e: any) {
-            alert(e?.message || "Failed to save");
+            toast.error(e?.message || "Failed to save");
         } finally {
             setSaving(false);
         }
@@ -78,26 +72,22 @@ export default function CompanySettings() {
             setCompany(null);
             setFormData({
                 name: "",
-                domain: "",
-                industry: "",
-                description: "",
-                website: "",
-                email: "",
+                tax_code: "",
                 phone: "",
-                address_line1: "",
-                address_line2: "",
-                city: "",
-                state: "",
+                email: "",
+                website: "",
+                description: "",
+                address_detail: "",
                 country: "",
+                state: "",
+                city: "",
             });
         } catch (e: any) {
-            alert(e?.message || "Failed to delete");
+            toast.error(e?.message || "Failed to delete");
         }
     }
 
-    if (loading) {
-        return <div className="h-48 animate-pulse rounded-xl border bg-slate-100" />;
-    }
+    if (loading) return <div className="h-48 animate-pulse rounded-xl border bg-slate-100" />;
 
     return (
         <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
@@ -107,10 +97,7 @@ export default function CompanySettings() {
                     {company && <p className="text-xs text-slate-500">Last updated {new Date(company.updated_at).toLocaleDateString()}</p>}
                 </div>
                 {company && (
-                    <button
-                        onClick={handleDelete}
-                        className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                    >
+                    <button onClick={handleDelete} className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50">
                         <TrashIcon className="h-4 w-4" />
                         Delete
                     </button>
@@ -129,35 +116,27 @@ export default function CompanySettings() {
                         />
                     </div>
                     <div>
-                        <label className="mb-1 block text-sm font-medium">Domain</label>
+                        <label className="mb-1 block text-sm font-medium">Tax code</label>
                         <input
-                            value={formData.domain}
-                            onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                            className="w-full rounded-md border px-3 py-2"
-                            placeholder="example.com"
-                        />
-                    </div>
-                    <div>
-                        <label className="mb-1 block text-sm font-medium">Industry</label>
-                        <input
-                            value={formData.industry}
-                            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                            value={formData.tax_code || ""}
+                            onChange={(e) => setFormData({ ...formData, tax_code: e.target.value })}
                             className="w-full rounded-md border px-3 py-2"
                         />
                     </div>
                     <div>
                         <label className="mb-1 block text-sm font-medium">Website</label>
                         <input
-                            value={formData.website}
+                            value={formData.website || ""}
                             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                             className="w-full rounded-md border px-3 py-2"
+                            placeholder="https://example.com"
                         />
                     </div>
                     <div>
                         <label className="mb-1 block text-sm font-medium">Email</label>
                         <input
                             type="email"
-                            value={formData.email}
+                            value={formData.email || ""}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             className="w-full rounded-md border px-3 py-2"
                         />
@@ -165,65 +144,57 @@ export default function CompanySettings() {
                     <div>
                         <label className="mb-1 block text-sm font-medium">Phone</label>
                         <input
-                            value={formData.phone}
+                            value={formData.phone || ""}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             className="w-full rounded-md border px-3 py-2"
                         />
                     </div>
                 </div>
+
                 <div>
                     <label className="mb-1 block text-sm font-medium">Description</label>
                     <textarea
-                        value={formData.description}
+                        value={formData.description || ""}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         className="w-full rounded-md border px-3 py-2"
                         rows={3}
                     />
                 </div>
 
-                {/* Address Section */}
+                {/* Address */}
                 <div className="border-t pt-4 mt-4">
                     <h4 className="text-sm font-semibold text-slate-900 mb-3">Business Address</h4>
                     <div className="space-y-3">
                         <div>
-                            <label className="mb-1 block text-sm font-medium">Street Address</label>
+                            <label className="mb-1 block text-sm font-medium">Address detail</label>
                             <input
-                                value={formData.address_line1}
-                                onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                                value={formData.address_detail || ""}
+                                onChange={(e) => setFormData({ ...formData, address_detail: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
                                 placeholder="123 Nguyễn Huệ"
                             />
                         </div>
-                        <div>
-                            <label className="mb-1 block text-sm font-medium">Apartment, Suite, Floor (Optional)</label>
-                            <input
-                                value={formData.address_line2}
-                                onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
-                                className="w-full rounded-md border px-3 py-2"
-                                placeholder="Tầng 5, Phòng 501"
-                            />
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                                <label className="mb-1 block text-sm font-medium">Country</label>
+                                <label className="mb-1 block textsm font-medium">Country</label>
                                 <CountrySelect
-                                    value={formData.country}
+                                    value={formData.country || ""}
                                     onChange={(value) => setFormData({ ...formData, country: value, state: "", city: "" })}
                                 />
                             </div>
                             <div>
-                                <label className="mb-1 block text-sm font-medium">Province/State</label>
+                                <label className="mb-1 block textsm font-medium">Province/State</label>
                                 <StateSelect
-                                    country={formData.country}
-                                    value={formData.state}
+                                    country={formData.country || ""}
+                                    value={formData.state || ""}
                                     onChange={(value) => setFormData({ ...formData, state: value, city: "" })}
                                 />
                             </div>
                             <div>
-                                <label className="mb-1 block text-sm font-medium">City/District</label>
+                                <label className="mb-1 block textsm font-medium">City/District</label>
                                 <CitySelect
-                                    state={formData.state}
-                                    value={formData.city}
+                                    state={formData.state || ""}
+                                    value={formData.city || ""}
                                     onChange={(value) => setFormData({ ...formData, city: value })}
                                 />
                             </div>

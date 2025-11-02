@@ -10,7 +10,7 @@ import useDebounced from '../hooks/useDebounced';
 import { listRecentContacts, type Contact } from '../services/contacts';
 import ContactCard from '../components/contacts/ContactCard';
 import EmptyState from '../components/EmptyState';
-import NewContactModal from '../components/contacts/NewContactModal';
+// import NewContactModal from '../components/contacts/NewContactModal';
 import Section from '../components/ui/Section';
 import StatCard from '../components/home/StatCard';
 // import QuickAction from '../components/home/QuickAction';
@@ -213,7 +213,7 @@ export default function Dashboard() {
                 </div>
             </main>
 
-            <NewContactModal open={openNew} onClose={() => setOpenNew(false)} onCreated={handleCreated} token={token} />
+            {/* <NewContactModal open={openNew} onClose={() => setOpenNew(false)} onCreated={handleCreated} token={token} /> */}
         </div>
     );
 }

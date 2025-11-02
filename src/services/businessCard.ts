@@ -1,34 +1,36 @@
+import { data } from "react-router-dom";
 import api from "./api";
+import type { Address } from "./company";
 
 export interface BusinessCard {
     id: number;
     user_id: number;
-    company_id?: number;
-    slug?: string;
+    company_id?: number | null;
+    slug?: string | null;
     full_name: string;
-    job_title?: string;
-    department?: string;
+    job_title?: string | null;
+    department?: string | null;
     email: string;
-    phone?: string;
-    mobile?: string;
-    website?: string;
-    address?: string;
-    address_line1?: string;
-    address_line2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postal_code?: string;
-    linkedin?: string;
-    facebook?: string;
-    twitter?: string;
-    avatar?: string;
-    notes?: string;
+    phone?: string | null;
+    mobile?: string | null;
+    website?: string | null;
+    linkedin?: string | null;
+    facebook?: string | null;
+    twitter?: string | null;
+    avatar?: string | null;
+    notes?: string | null;
     is_public?: boolean;
     view_count?: number;
     created_at: string;
     updated_at: string;
-    company?: any;
+    address_id?: number | null;
+    address?: Address | null;
+    company?: {
+        id: number;
+        name: string;
+        website?: string | null;
+        logo?: string | null;
+    } | null;
 }
 
 export interface BusinessCardFormData {
@@ -40,19 +42,17 @@ export interface BusinessCardFormData {
     phone?: string;
     mobile?: string;
     website?: string;
-    address?: string;
-    address_line1?: string;
-    address_line2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postal_code?: string;
     linkedin?: string;
     facebook?: string;
     twitter?: string;
     avatar?: File;
     notes?: string;
-    is_public?: boolean;
+    is_public?: boolean | 0 | 1;
+
+    address_detail?: string;
+    city?: string;
+    state?: string;
+    country?: string;
 }
 
 export interface PublicBusinessCard {
@@ -68,36 +68,36 @@ export interface PublicBusinessCard {
     facebook?: string;
     twitter?: string;
     avatar?: string;
+    view_count: number;
     company?: {
         name: string;
-        industry?: string;
         website?: string;
         logo?: string;
-    };
-    view_count: number;
+    } | null;
+    address?: {
+        address_detail?: string | null;
+        country?: { code: string } | null;
+        state?: { code: string } | null;
+        city?: { code: string } | null;
+    } | null;
 }
 
 export async function getBusinessCard(): Promise<BusinessCard | null> {
-    try {
-        const { data } = await api.get("/business-card");
-        return data;
-    } catch (e: any) {
-        if (e?.response?.status === 204) return null;
-        throw e;
+    const res = await api.get<BusinessCard>("/business-card");
+    // Nếu API trả về null hoặc empty object
+    if (!res.data || (typeof res.data === 'object' && Object.keys(res.data).length === 0)) {
+        return null;
     }
+    return res.data;
 }
 
 export async function saveBusinessCard(formData: BusinessCardFormData): Promise<BusinessCard> {
     const fd = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-            if (value instanceof File) {
-                fd.append(key, value);
-            } else if (typeof value === 'boolean') {
-                fd.append(key, value ? '1' : '0');
-            } else {
-                fd.append(key, String(value));
-            }
+            if (value instanceof File) fd.append(key, value);
+            else if (typeof value === "boolean") fd.append(key, value ? "1" : "0");
+            else fd.append(key, String(value));
         }
     });
     const { data } = await api.post("/business-card", fd, {

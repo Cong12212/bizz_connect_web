@@ -1,9 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { getBusinessCard, saveBusinessCard, deleteBusinessCard, type BusinessCard, type BusinessCardFormData } from "@/services/businessCard";
+import {
+    getBusinessCard,
+    saveBusinessCard,
+    deleteBusinessCard,
+    type BusinessCard,
+    type BusinessCardFormData,
+} from "@/services/businessCard";
 import { getCompany, type Company } from "@/services/company";
 import { TrashIcon, LinkIcon, EyeIcon, ShareIcon } from "@heroicons/react/24/outline";
+import CountrySelect from "./CountrySelect";
+import StateSelect from "./StateSelect";
+import CitySelect from "./CitySelect";
+import { useToast } from "@/components/ui/Toast";
 
 export default function BusinessCardSettings() {
+    const toast = useToast();
     const [card, setCard] = useState<BusinessCard | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
@@ -19,6 +30,12 @@ export default function BusinessCardSettings() {
         linkedin: "",
         notes: "",
         is_public: true,
+
+        // ---- địa chỉ theo chuẩn BE ----
+        address_detail: "",
+        country: "",
+        state: "",
+        city: "",
     });
 
     useEffect(() => {
@@ -29,12 +46,17 @@ export default function BusinessCardSettings() {
         try {
             setLoading(true);
             const [cardData, companyData] = await Promise.all([getBusinessCard(), getCompany()]);
+
+            console.log("this is business card ▶", cardData);
+
             setCard(cardData);
             setCompany(companyData);
+
             if (cardData) {
-                setFormData({
-                    full_name: cardData.full_name,
-                    email: cardData.email,
+                setFormData((prev) => ({
+                    ...prev,
+                    full_name: cardData.full_name || "",
+                    email: cardData.email || "",
                     job_title: cardData.job_title || "",
                     phone: cardData.phone || "",
                     mobile: cardData.mobile || "",
@@ -42,9 +64,15 @@ export default function BusinessCardSettings() {
                     linkedin: cardData.linkedin || "",
                     notes: cardData.notes || "",
                     is_public: cardData.is_public ?? true,
-                });
+                    // map từ object address (relations) → code
+                    address_detail: cardData.address?.address_detail || "",
+                    country: cardData.address?.country?.code || "",
+                    state: cardData.address?.state?.code || "",
+                    city: cardData.address?.city?.code || "",
+                }));
             }
-        } catch (e: any) {
+        } catch (error) {
+            console.error("Load business card error:", error);
         } finally {
             setLoading(false);
         }
@@ -54,16 +82,16 @@ export default function BusinessCardSettings() {
         e.preventDefault();
         try {
             setSaving(true);
-            const payload: any = {
+            const payload: BusinessCardFormData = {
                 ...formData,
                 company_id: company?.id,
-                is_public: Boolean(formData.is_public)
+                is_public: Boolean(formData.is_public),
             };
             const saved = await saveBusinessCard(payload);
             setCard(saved);
-            alert("Business card saved!");
+            toast.success("Business card saved!");
         } catch (e: any) {
-            alert(e?.message || "Failed to save");
+            toast.error(e?.message || "Failed to save");
         } finally {
             setSaving(false);
         }
@@ -84,9 +112,13 @@ export default function BusinessCardSettings() {
                 linkedin: "",
                 notes: "",
                 is_public: true,
+                address_detail: "",
+                country: "",
+                state: "",
+                city: "",
             });
         } catch (e: any) {
-            alert(e?.message || "Failed to delete");
+            toast.error(e?.message || "Failed to delete");
         }
     }
 
@@ -94,7 +126,7 @@ export default function BusinessCardSettings() {
         if (!card?.slug) return;
         const link = `${window.location.origin}/card/${card.slug}`;
         navigator.clipboard.writeText(link);
-        alert("Link copied to clipboard!");
+        toast.success("Link copied to clipboard!");
     }
 
     if (loading) {
@@ -109,7 +141,11 @@ export default function BusinessCardSettings() {
                 <div className="flex items-center justify-between border-b bg-gradient-to-r from-slate-50 to-white px-5 py-3">
                     <div>
                         <h3 className="text-sm font-semibold text-slate-900">Card Details</h3>
-                        {card && <p className="text-xs text-slate-500">Last updated {new Date(card.updated_at).toLocaleDateString()}</p>}
+                        {card && (
+                            <p className="text-xs text-slate-500">
+                                Last updated {new Date(card.updated_at).toLocaleDateString()}
+                            </p>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         {card && publicUrl && (
@@ -143,11 +179,11 @@ export default function BusinessCardSettings() {
                         <label className="relative inline-flex cursor-pointer items-center">
                             <input
                                 type="checkbox"
-                                checked={formData.is_public}
+                                checked={!!formData.is_public}
                                 onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
                                 className="peer sr-only"
                             />
-                            <div className="peer h-6 w-11 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+                            <div className="peer h-6 w-11 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
                         </label>
                     </div>
 
@@ -177,6 +213,7 @@ export default function BusinessCardSettings() {
                         </div>
                     )}
 
+                    {/* Basics */}
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <label className="mb-1 block text-sm font-medium">Full Name *</label>
@@ -200,7 +237,7 @@ export default function BusinessCardSettings() {
                         <div>
                             <label className="mb-1 block text-sm font-medium">Job Title</label>
                             <input
-                                value={formData.job_title}
+                                value={formData.job_title || ""}
                                 onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
                             />
@@ -208,7 +245,7 @@ export default function BusinessCardSettings() {
                         <div>
                             <label className="mb-1 block text-sm font-medium">Phone</label>
                             <input
-                                value={formData.phone}
+                                value={formData.phone || ""}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
                             />
@@ -216,7 +253,7 @@ export default function BusinessCardSettings() {
                         <div>
                             <label className="mb-1 block text-sm font-medium">Mobile</label>
                             <input
-                                value={formData.mobile}
+                                value={formData.mobile || ""}
                                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
                             />
@@ -224,12 +261,13 @@ export default function BusinessCardSettings() {
                         <div>
                             <label className="mb-1 block text-sm font-medium">LinkedIn</label>
                             <input
-                                value={formData.linkedin}
+                                value={formData.linkedin || ""}
                                 onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
                             />
                         </div>
                     </div>
+
                     {company && (
                         <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
                             <p className="text-xs font-medium text-blue-900">
@@ -238,15 +276,60 @@ export default function BusinessCardSettings() {
                             </p>
                         </div>
                     )}
+
+                    {/* Notes */}
                     <div>
                         <label className="mb-1 block text-sm font-medium">Notes</label>
                         <textarea
-                            value={formData.notes}
+                            value={formData.notes || ""}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             className="w-full rounded-md border px-3 py-2"
                             rows={3}
                         />
                     </div>
+
+                    {/* Address (mới, map code) */}
+                    <div className="border-t pt-4">
+                        <h4 className="text-sm font-semibold text-slate-900 mb-3">Address</h4>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">Address detail</label>
+                                <input
+                                    value={formData.address_detail || ""}
+                                    onChange={(e) => setFormData({ ...formData, address_detail: e.target.value })}
+                                    className="w-full rounded-md border px-3 py-2"
+                                    placeholder="123 Nguyễn Huệ"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">Country</label>
+                                    <CountrySelect
+                                        value={formData.country || ""}
+                                        onChange={(value) => setFormData({ ...formData, country: value, state: "", city: "" })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">Province/State</label>
+                                    <StateSelect
+                                        country={formData.country || ""}
+                                        value={formData.state || ""}
+                                        onChange={(value) => setFormData({ ...formData, state: value, city: "" })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">City/District</label>
+                                    <CitySelect
+                                        state={formData.state || ""}
+                                        value={formData.city || ""}
+                                        onChange={(value) => setFormData({ ...formData, city: value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Submit */}
                     <div className="flex justify-end border-t pt-4">
                         <button
                             type="submit"
@@ -266,24 +349,13 @@ export default function BusinessCardSettings() {
                         <h3 className="mb-4 text-lg font-semibold">Share Your Business Card</h3>
                         <p className="mb-4 text-sm text-slate-600">Share this link with others to connect</p>
                         <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={publicUrl}
-                                readOnly
-                                className="flex-1 rounded-md border bg-slate-50 px-3 py-2 text-sm"
-                            />
-                            <button
-                                onClick={copyShareLink}
-                                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                            >
+                            <input type="text" value={publicUrl} readOnly className="flex-1 rounded-md border bg-slate-50 px-3 py-2 text-sm" />
+                            <button onClick={copyShareLink} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                                 Copy
                             </button>
                         </div>
                         <div className="mt-4 flex justify-end">
-                            <button
-                                onClick={() => setShowShareModal(false)}
-                                className="rounded-md px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                            >
+                            <button onClick={() => setShowShareModal(false)} className="rounded-md px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">
                                 Close
                             </button>
                         </div>

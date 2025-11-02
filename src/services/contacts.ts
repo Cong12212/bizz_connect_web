@@ -2,6 +2,32 @@ import { apiFetch, apiFetchBlob } from "../lib/api";
 
 export type Tag = { id: number; name: string };
 
+interface AddressData {
+    id: number;
+    address_detail: string | null;
+    city_id: number | null;
+    state_id: number | null;
+    country_id: number | null;
+    city?: {
+        id: number;
+        code: string;
+        name: string;
+        state_id?: number;
+    } | null;
+    state?: {
+        id: number;
+        code: string;
+        name: string;
+        country_id?: number;
+    } | null;
+    country?: {
+        id: number;
+        code: string;
+        name: string;
+    } | null;
+    full_address?: string;
+}
+
 export interface Contact {
     id: number;
     name: string;
@@ -16,28 +42,7 @@ export interface Contact {
     created_at?: string;
     updated_at?: string;
     address_id?: number | null;
-    address?: {
-        id: number;
-        address_detail: string | null;
-        city_id: number | null;
-        state_id: number | null;
-        country_id: number | null;
-        city?: {
-            id: number;
-            code: string;
-            name: string;
-        } | null;
-        state?: {
-            id: number;
-            code: string;
-            name: string;
-        } | null;
-        country?: {
-            id: number;
-            code: string;
-            name: string;
-        } | null;
-    } | null;
+    address?: AddressData | null;
     tags?: Array<{
         id: number;
         name: string;

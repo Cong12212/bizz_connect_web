@@ -43,30 +43,28 @@ export default function PublicBusinessCardPage() {
     }
 
     function handleConnect() {
-        if (!isAuthenticated) {
-            return; // Do nothing, auth buttons are already visible
-        }
+        if (!isAuthenticated) return;
 
-        // Map business card to contact format
         const prefillData = {
             name: card!.full_name,
-            email: card!.email || '',
-            phone: card!.phone || card!.mobile || '',
-            company: card!.company?.name || '',
-            job_title: card!.job_title || '',
-            address: '',
-            notes: '',
-            linkedin_url: card!.linkedin || '',
-            website_url: card!.website || '',
-            source: 'business_card',
+            email: card!.email || "",
+            phone: card!.phone || card!.mobile || "",
+            company: card!.company?.name || "",
+            job_title: card!.job_title || "",
+            notes: "",
+            linkedin_url: card!.linkedin || "",
+            website_url: card!.website || "",
+            source: "business_card",
+
+            // ⬇️ patch address vào state để form nhận
+            address_detail: card?.address?.address_detail || "",     // hoặc card?.address_text nếu BE trả free-text
+            country: card?.address?.country?.code || "",
+            state: card?.address?.state?.code || "",
+            city: card?.address?.city?.code || "",
         };
 
-        // Navigate with state
-        navigate('/contacts', {
-            state: {
-                openCreateSheet: true,
-                prefillData: prefillData
-            }
+        navigate("/contacts", {
+            state: { openCreateSheet: true, prefillData },
         });
     }
 

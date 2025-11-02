@@ -1,45 +1,49 @@
 import api from "./api";
 
+export interface RefItem {
+    id: number;
+    code: string;
+    name: string;
+}
+
+export interface Address {
+    id: number;
+    address_detail: string | null;
+    city?: RefItem | null;
+    state?: RefItem | null;
+    country?: RefItem | null;
+}
+
 export interface Company {
     id: number;
-    user_id: number;
     name: string;
-    domain?: string;
-    industry?: string;
-    description?: string;
-    website?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    address_line1?: string;
-    address_line2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postal_code?: string;
-    logo?: string;
-    plan: string;
-    status: string;
+    tax_code?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    description?: string | null;
+    logo?: string | null;
+    address_id?: number | null;
+    address?: Address | null;
     created_at: string;
     updated_at: string;
+    deleted_at?: string | null;
 }
 
 export interface CompanyFormData {
     name: string;
-    domain?: string;
-    industry?: string;
-    description?: string;
-    website?: string;
-    email?: string;
+    tax_code?: string;
     phone?: string;
-    address?: string;
-    address_line1?: string;
-    address_line2?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    postal_code?: string;
+    email?: string;
+    website?: string;
+    description?: string;
     logo?: File;
+
+    // gửi code để BE map sang address_id
+    address_detail?: string;
+    city?: string;    // code
+    state?: string;   // code
+    country?: string; // code
 }
 
 export async function getCompany(): Promise<Company | null> {
@@ -56,11 +60,8 @@ export async function saveCompany(formData: CompanyFormData): Promise<Company> {
     const fd = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-            if (value instanceof File) {
-                fd.append(key, value);
-            } else {
-                fd.append(key, String(value));
-            }
+            if (value instanceof File) fd.append(key, value);
+            else fd.append(key, String(value));
         }
     });
     const { data } = await api.post("/company", fd, {
