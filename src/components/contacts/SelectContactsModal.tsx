@@ -15,8 +15,6 @@ type Filters = {
     tag_mode?: 'any' | 'all';
 };
 
-
-
 export default function SelectContactsModal({
     open,
     onClose,
@@ -29,10 +27,7 @@ export default function SelectContactsModal({
     allowToggleWithWithout,
     onAddToFocusTag,
     refreshKey,
-
-    /** loại bỏ các contact này khỏi list (ví dụ đã chọn sẵn) */
     excludeIds = [],
-    /** bật chế độ "without reminder" + điều kiện */
     withoutReminder,
 }: {
     open: boolean;
@@ -48,7 +43,6 @@ export default function SelectContactsModal({
     allowToggleWithWithout?: boolean;
     onAddToFocusTag?: (ids: number[], tag: Tag) => Promise<void>;
     refreshKey?: number;
-
     excludeIds?: number[];
     withoutReminder?: {
         enabled: boolean;
@@ -65,31 +59,24 @@ export default function SelectContactsModal({
         last: 1,
     });
 
-    // fetch state
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-
-    // action state (confirm / add to tag)
     const [actionBusy, setActionBusy] = useState(false);
 
     const [q, setQ] = useState(filters.q || '');
     const [sort, setSort] = useState<Filters['sort']>(filters.sort || 'name');
-
-    // selection (giữ xuyên trang)
     const [selected, setSelected] = useState<Set<number>>(new Set());
-
-    // With / Without #tag
     const [viewWithout, setViewWithout] = useState(false);
-
-    // mini notice (không có nút)
     const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+    // Auto-hide notice after 2.2s
     useEffect(() => {
         if (!notice) return;
         const t = setTimeout(() => setNotice(null), 2200);
         return () => clearTimeout(t);
     }, [notice]);
 
-    // ===== Helper: cập nhật local list ngay lập tức (không đụng total/last) =====
+    // Update local list immediately (without touching total/last)
     function dropIds(ids: number[]) {
         if (!ids.length) return;
         setData((d) => ({
@@ -103,7 +90,7 @@ export default function SelectContactsModal({
         });
     }
 
-    // reset khi mở modal
+    // Reset when modal opens
     useEffect(() => {
         if (!open) return;
         setPage(1);
@@ -113,13 +100,13 @@ export default function SelectContactsModal({
         setViewWithout(false);
     }, [open]); // eslint-disable-line
 
-    // đổi With/Without hoặc đổi tag => reset trang + selection
+    // Reset page + selection when switching With/Without or changing tag
     useEffect(() => {
         setPage(1);
         setSelected(new Set());
     }, [viewWithout, focusTag?.id]);
 
-    // tải danh sách
+    // Fetch contact list
     async function fetchList() {
         if (!open) return;
         setLoading(true);
@@ -217,7 +204,7 @@ export default function SelectContactsModal({
             if (focusTag && allowToggleWithWithout && !viewWithout) {
                 dropIds(ids);
             }
-            setNotice({ type: 'success', msg: 'Done.' });
+            setNotice({ type: 'success', msg: 'Action completed successfully' });
         } catch (e: any) {
             setNotice({ type: 'error', msg: e?.message || 'Action failed' });
         } finally {
@@ -237,9 +224,9 @@ export default function SelectContactsModal({
             if (allowToggleWithWithout && viewWithout) {
                 dropIds(ids);
             }
-            setNotice({ type: 'success', msg: `Added to #${focusTag.name}` });
+            setNotice({ type: 'success', msg: `Added ${ids.length} contact(s) to #${focusTag.name}` });
         } catch (e: any) {
-            setNotice({ type: 'error', msg: e?.message || 'Failed' });
+            setNotice({ type: 'error', msg: e?.message || 'Failed to add contacts' });
         } finally {
             setActionBusy(false);
         }
@@ -251,35 +238,41 @@ export default function SelectContactsModal({
 
     return (
         <div className="fixed inset-0 z-50">
-            {/* backdrop (chặn đóng khi đang chạy action/fetch) */}
+            {/* Backdrop with blur */}
             <div
-                className={`absolute inset-0 bg-black/30 ${disableAll ? 'cursor-wait' : ''}`}
+                className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity ${disableAll ? 'cursor-wait' : ''}`}
                 onClick={() => {
                     if (!disableAll) onClose();
                 }}
             />
 
-            {/* modal */}
+            {/* Modal */}
             <div className="absolute inset-0 grid place-items-center p-4">
-                <div className="relative w-full max-w-[1100px] rounded-2xl bg-white shadow-xl flex h-[78vh] min-h-[560px] max-h-[78vh] flex-col overflow-hidden">
+                <div className="relative w-full max-w-[1100px] rounded-2xl bg-white shadow-2xl flex h-[82vh] min-h-[600px] max-h-[82vh] flex-col overflow-hidden">
                     {/* Top loading bar */}
                     {(loading || actionBusy) && (
-                        <div className="absolute left-0 top-0 h-1 w-full overflow-hidden">
-                            <div className="h-full w-1/3 animate-[loading_1.2s_linear_infinite] bg-slate-900" />
+                        <div className="absolute left-0 top-0 h-1 w-full overflow-hidden bg-slate-100">
+                            <div className="h-full w-1/3 animate-[loading_1.2s_linear_infinite] bg-gradient-to-r from-blue-500 to-purple-500" />
                         </div>
                     )}
 
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b px-4 py-3">
-                        <h3 className="text-base font-semibold">{title}</h3>
+                    <div className="flex items-center justify-between border-b bg-gradient-to-r from-slate-50 to-white px-6 py-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+                            <p className="text-sm text-slate-500 mt-0.5">
+                                {loading ? 'Loading...' : `${data.total} contact${data.total !== 1 ? 's' : ''} available`}
+                            </p>
+                        </div>
 
+                        {/* With/Without toggle buttons */}
                         {focusTag && allowToggleWithWithout && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 bg-white rounded-full p-1 shadow-sm border">
                                 <button
                                     disabled={disableAll}
-                                    className={`rounded-full px-3 py-1 text-sm ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${!viewWithout
-                                        ? 'bg-slate-900 text-white ring-slate-900'
-                                        : 'bg-white text-slate-700 ring-slate-300'
+                                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${!viewWithout
+                                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                     onClick={() => setViewWithout(false)}
                                 >
@@ -287,9 +280,9 @@ export default function SelectContactsModal({
                                 </button>
                                 <button
                                     disabled={disableAll}
-                                    className={`rounded-full px-3 py-1 text-sm ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${viewWithout
-                                        ? 'bg-slate-900 text-white ring-slate-900'
-                                        : 'bg-white text-slate-700 ring-slate-300'
+                                    className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${viewWithout
+                                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50'
                                         }`}
                                     onClick={() => setViewWithout(true)}
                                 >
@@ -301,63 +294,71 @@ export default function SelectContactsModal({
                         <button
                             onClick={() => !disableAll && onClose()}
                             disabled={disableAll}
-                            className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             title={disableAll ? 'Please wait…' : 'Close'}
+                            aria-label="Close"
                         >
-                            ✕
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     </div>
 
                     {/* Toolbar */}
-                    <div className="flex items-center gap-3 border-b px-4 py-2 text-sm">
-                        <span className="text-slate-500">Filter:</span>
-                        <div className="relative w-[260px]">
-                            <input
-                                value={q}
-                                onChange={(e) => {
-                                    setPage(1);
-                                    setQ(e.target.value);
-                                }}
-                                placeholder="q: (none)"
-                                className="w-full rounded-md border bg-white px-3 py-1.5 pl-8 outline-none disabled:opacity-50"
-                                disabled={disableAll}
-                            />
-                            <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
-                                🔎
-                            </span>
+                    <div className="flex items-center gap-4 border-b bg-slate-50 px-6 py-3 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-slate-600 font-medium">🔍 Search:</span>
+                            <div className="relative">
+                                <input
+                                    value={q}
+                                    onChange={(e) => {
+                                        setPage(1);
+                                        setQ(e.target.value);
+                                    }}
+                                    placeholder="Search by name, email, company..."
+                                    className="w-[320px] rounded-lg border border-slate-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:bg-slate-100"
+                                    disabled={disableAll}
+                                />
+                            </div>
                         </div>
 
-                        <span className="ml-2 text-slate-500">sort:</span>
-                        <select
-                            value={sort}
-                            onChange={(e) => {
-                                setSort(e.target.value as any);
-                                setPage(1);
-                            }}
-                            className="rounded-md border bg-white px-2 py-1 disabled:opacity-50"
-                            disabled={disableAll}
-                        >
-                            <option value="name">name</option>
-                            <option value="-name">-name</option>
-                            <option value="-id">-id</option>
-                            <option value="id">id</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                            <span className="text-slate-600 font-medium">⬍ Sort:</span>
+                            <select
+                                value={sort}
+                                onChange={(e) => {
+                                    setSort(e.target.value as any);
+                                    setPage(1);
+                                }}
+                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+                                disabled={disableAll}
+                            >
+                                <option value="name">A → Z</option>
+                                <option value="-name">Z → A</option>
+                                <option value="-id">Newest first</option>
+                                <option value="id">Oldest first</option>
+                            </select>
+                        </div>
 
                         {err && (
-                            <span className="ml-auto rounded-md bg-rose-50 px-2 py-1 text-rose-700">{err}</span>
+                            <div className="ml-auto rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-red-700 text-sm flex items-center gap-2">
+                                <span>⚠️</span>
+                                <span>{err}</span>
+                            </div>
                         )}
                     </div>
 
                     {/* Body */}
-                    <div className="min-h-0 flex-1 overflow-y-auto px-4">
-                        <div className="mx-auto my-3 w-full rounded-xl border">
-                            <div className="sticky top-0 z-10 grid grid-cols-[40px_1fr_1fr_1fr] items-center gap-2 border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
-                                <div className="flex items-center">
+                    <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-6">
+                        <div className="mx-auto w-full rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                            {/* Table Header */}
+                            <div className="sticky top-0 z-10 flex items-center gap-4 border-b bg-gradient-to-r from-slate-50 to-white px-4 py-3">
+                                <div className="flex items-center w-10">
                                     <input
                                         type="checkbox"
                                         aria-label="Select all on this page"
                                         disabled={loading || pageIds.length === 0}
-                                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                         checked={allPageChecked && !loading}
                                         ref={(el) => {
                                             if (el) el.indeterminate = !loading && somePageChecked;
@@ -365,15 +366,28 @@ export default function SelectContactsModal({
                                         onChange={(e) => toggleAllCurrentPage(e.target.checked)}
                                     />
                                 </div>
-                                <div>Name & Company</div>
-                                <div>Email</div>
-                                <div>Phone</div>
+                                <div className="flex-1 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Contact
+                                </div>
+                                <div className="w-48 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Email
+                                </div>
+                                <div className="w-36 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                    Phone
+                                </div>
                             </div>
 
+                            {/* Table Body */}
                             {loading ? (
-                                <div className="p-3">
+                                <div className="p-4 space-y-3">
                                     {Array.from({ length: 8 }).map((_, i) => (
-                                        <div key={i} className="mb-2 h-12 animate-pulse rounded-lg bg-slate-200" />
+                                        <div key={i} className="flex items-center gap-4 p-3 rounded-xl">
+                                            <div className="w-12 h-12 animate-pulse rounded-full bg-slate-200" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
+                                                <div className="h-3 w-1/4 animate-pulse rounded bg-slate-200" />
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
@@ -383,30 +397,48 @@ export default function SelectContactsModal({
                                         return (
                                             <li
                                                 key={c.id}
-                                                className="grid grid-cols-[40px_1fr_1fr_1fr] items-center gap-2 px-3 py-2 hover:bg-slate-50"
+                                                className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors border-b last:border-b-0 ${checked ? 'bg-blue-50' : ''}`}
                                             >
-                                                <div>
+                                                <div className="w-10">
                                                     <input
                                                         type="checkbox"
                                                         disabled={disableAll}
-                                                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                                         checked={checked}
                                                         onChange={(e) => toggleOne(c.id, e.target.checked)}
                                                     />
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <div className="truncate text-sm font-medium">{c.name}</div>
-                                                    <div className="truncate text-xs text-slate-500">
-                                                        {c.company || c.job_title || '—'}
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    {/* Avatar */}
+                                                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                                        {initials(c.name)}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-medium text-sm text-slate-900 truncate">
+                                                            {c.name}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 truncate">
+                                                            {c.company || c.job_title || '—'}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="truncate text-xs">{c.email || '—'}</div>
-                                                <div className="truncate text-xs">{c.phone || '—'}</div>
+                                                <div className="w-48 text-sm text-slate-600 truncate">
+                                                    {c.email || '—'}
+                                                </div>
+                                                <div className="w-36 text-sm text-slate-600 truncate">
+                                                    {c.phone || '—'}
+                                                </div>
                                             </li>
                                         );
                                     })}
                                     {!data.items.length && !loading && (
-                                        <li className="p-6 text-center text-sm text-slate-500">No results</li>
+                                        <li className="p-12 text-center">
+                                            <div className="text-5xl mb-3">🔍</div>
+                                            <div className="text-base font-medium text-slate-900">No contacts found</div>
+                                            <div className="text-sm text-slate-500 mt-1">
+                                                Try adjusting your search or filters
+                                            </div>
+                                        </li>
                                     )}
                                 </ul>
                             )}
@@ -415,58 +447,88 @@ export default function SelectContactsModal({
 
                     {/* Footer */}
                     <div
-                        className="flex flex-col gap-2 border-t bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-                        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                        className="flex flex-col gap-3 border-t bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
+                        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
                     >
-                        {/* pager */}
-                        <div className="order-2 flex items-center gap-2 sm:order-1">
-                            <button
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={disableAll || page <= 1}
-                                className="rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                «
-                            </button>
-                            <span className="text-sm">
-                                Page {page} / {Math.max(1, data.last)}
-                            </span>
-                            <button
-                                onClick={() => setPage((p) => Math.min(data.last || 1, p + 1))}
-                                disabled={disableAll || page >= data.last}
-                                className="rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                »
-                            </button>
+                        {/* Left: Pagination & Selection info */}
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setPage(1)}
+                                    disabled={disableAll || page <= 1}
+                                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                                    title="First page"
+                                >
+                                    «
+                                </button>
+                                <button
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={disableAll || page <= 1}
+                                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                                >
+                                    ‹
+                                </button>
+                                <span className="text-sm font-medium text-slate-700 px-2">
+                                    Page {page} of {Math.max(1, data.last)}
+                                </span>
+                                <button
+                                    onClick={() => setPage((p) => Math.min(data.last || 1, p + 1))}
+                                    disabled={disableAll || page >= data.last}
+                                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                                >
+                                    ›
+                                </button>
+                                <button
+                                    onClick={() => setPage(data.last || 1)}
+                                    disabled={disableAll || page >= data.last}
+                                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                                    title="Last page"
+                                >
+                                    »
+                                </button>
+                            </div>
 
-                            <span className="ml-4 text-sm text-slate-600">
-                                Selected: <b>{selected.size}</b> / {data.total}
+                            <div className="h-6 w-px bg-slate-300" />
+
+                            <span className="text-sm text-slate-600">
+                                Selected: <span className="font-bold text-blue-600">{selected.size}</span> / {data.total}
                             </span>
+
                             <button
                                 onClick={() => toggleAllCurrentPage(true)}
-                                disabled={disableAll || !pageIds.length}
-                                className="ml-2 rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Select this page"
+                                disabled={disableAll || !pageIds.length || allPageChecked}
+                                className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-100 transition-colors"
                             >
-                                Select this page ({pageIds.length})
+                                Select page ({pageIds.length})
                             </button>
                             <button
                                 onClick={() => setSelected(new Set())}
                                 disabled={disableAll || selected.size === 0}
-                                className="rounded-md border px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
                             >
-                                Clear selected
+                                Clear
                             </button>
                         </div>
 
-                        {/* actions (KHÔNG thêm nút mới) */}
-                        <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:flex-row sm:items-center">
+                        {/* Right: Action buttons */}
+                        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
                             {focusTag && allowToggleWithWithout && viewWithout && onAddToFocusTag && (
                                 <button
                                     onClick={handleAddToFocusTag}
                                     disabled={disableAll || selected.size === 0}
-                                    className="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md transition-all"
                                 >
-                                    {actionBusy ? 'Adding…' : `Add selected to #${focusTag.name}`}
+                                    {actionBusy ? (
+                                        <span className="flex items-center gap-2">
+                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            Adding...
+                                        </span>
+                                    ) : (
+                                        `Add selected to #${focusTag.name}`
+                                    )}
                                 </button>
                             )}
 
@@ -474,38 +536,73 @@ export default function SelectContactsModal({
                                 <button
                                     onClick={handleConfirm}
                                     disabled={disableAll || selected.size === 0}
-                                    className="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="rounded-lg bg-gradient-to-r from-rose-500 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md transition-all"
                                 >
-                                    {actionBusy ? 'Processing…' : confirmLabel}
+                                    {actionBusy ? (
+                                        <span className="flex items-center gap-2">
+                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            Processing...
+                                        </span>
+                                    ) : (
+                                        confirmLabel
+                                    )}
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* Floating notice (không có nút) */}
+                    {/* Floating notice */}
                     {notice && (
-                        <div className="pointer-events-none absolute bottom-3 right-3">
+                        <div className="pointer-events-none absolute bottom-6 right-6 z-50">
                             <div
-                                className={`pointer-events-auto rounded-lg px-3 py-2 text-sm shadow ${notice.type === 'success'
-                                    ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200'
-                                    : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                                className={`pointer-events-auto rounded-xl px-4 py-3 text-sm font-medium shadow-lg animate-[slideIn_0.3s_ease-out] ${notice.type === 'success'
+                                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
+                                    : 'bg-gradient-to-r from-rose-500 to-red-500 text-white'
                                     }`}
                             >
-                                {notice.msg}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">
+                                        {notice.type === 'success' ? '✓' : '⚠️'}
+                                    </span>
+                                    <span>{notice.msg}</span>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* keyframes for loading bar */}
+            {/* Animations */}
             <style>{`
                 @keyframes loading {
-                    0%   { transform: translateX(-120%); }
-                    50%  { transform: translateX(20%); }
-                    100% { transform: translateX(120%); }
+                    0%   { transform: translateX(-100%); }
+                    100% { transform: translateX(400%); }
+                }
+                @keyframes slideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
                 }
             `}</style>
         </div>
     );
+}
+
+// Helper: get initials from name
+function initials(name?: string): string {
+    if (!name) return '?';
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s) => s[0]?.toUpperCase())
+        .join('');
 }

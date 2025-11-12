@@ -74,34 +74,143 @@ export default function TagContactsDrawer({
 
     return (
         <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-            <div className="absolute inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl flex flex-col">
-                <div className="flex items-center justify-between border-b px-4 py-3">
-                    <h3 className="text-base font-semibold">Contacts with #{tagName}</h3>
-                    <button onClick={onClose} className="rounded-md px-2 py-1 text-slate-500 hover:bg-slate-100">✕</button>
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+            {/* Drawer panel */}
+            <div className="absolute inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b bg-white px-6 py-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900">
+                            Contacts with <span className="text-blue-600">#{tagName}</span>
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                            {loading ? 'Loading...' : `${data.total} contact${data.total !== 1 ? 's' : ''} found`}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                        aria-label="Close"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
-                <div className="flex-1 overflow-auto p-3">
-                    {err && <div className="mb-2 rounded-md bg-rose-50 p-2 text-sm text-rose-700">{err}</div>}
+                {/* Content */}
+                <div className="flex-1 overflow-auto bg-slate-50 p-4">
+                    {err && (
+                        <div className="mb-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                            <div className="flex items-start gap-3">
+                                <span className="text-xl">⚠️</span>
+                                <div>
+                                    <div className="font-medium">Error loading contacts</div>
+                                    <div className="text-xs mt-1">{err}</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {loading ? (
-                        Array.from({ length: 8 }).map((_, i) => <div key={i} className="mb-2 h-12 animate-pulse rounded-lg bg-slate-200" />)
-                    ) : (
-                        <ul>
+                        <div className="space-y-3">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="h-20 animate-pulse rounded-2xl bg-white shadow-sm" />
+                            ))}
+                        </div>
+                    ) : data.items.length > 0 ? (
+                        <ul className="space-y-3">
                             {data.items.map(c => (
-                                <li key={c.id} className="rounded-lg border p-3 mb-2">
-                                    <div className="text-sm font-medium">{c.name}</div>
-                                    <div className="text-xs text-slate-500">{c.company || c.job_title || c.email || c.phone || '—'}</div>
+                                <li key={c.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="p-4 flex items-start gap-4">
+                                        {/* Avatar */}
+                                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-base">
+                                            {initials(c.name)}
+                                        </div>
+
+                                        {/* Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <h4 className="text-sm font-semibold text-slate-900 truncate">
+                                                        {c.name}
+                                                    </h4>
+                                                    {(c.job_title || c.company) && (
+                                                        <p className="text-xs text-slate-600 mt-0.5 truncate">
+                                                            {[c.job_title, c.company].filter(Boolean).join(' • ')}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Contact details */}
+                                            <div className="mt-2 space-y-1">
+                                                {c.email && (
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                        <span>📧</span>
+                                                        <span className="truncate">{c.email}</span>
+                                                    </div>
+                                                )}
+                                                {c.phone && (
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                        <span>📱</span>
+                                                        <span>{c.phone}</span>
+                                                    </div>
+                                                )}
+                                                {!c.email && !c.phone && (
+                                                    <div className="text-xs text-slate-400 italic">No contact info</div>
+                                                )}
+                                            </div>
+
+                                            {/* Tags */}
+                                            {Array.isArray(c.tags) && c.tags.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {c.tags.map((t) => (
+                                                        <span
+                                                            key={t.id}
+                                                            className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700 ring-1 ring-blue-200"
+                                                        >
+                                                            #{t.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </li>
                             ))}
-                            {!data.items.length && <li className="p-6 text-center text-sm text-slate-500">No contacts</li>}
                         </ul>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-16 px-4">
+                            <div className="text-6xl mb-4">🔍</div>
+                            <h4 className="text-base font-medium text-slate-900 mb-1">No contacts found</h4>
+                            <p className="text-sm text-slate-500 text-center max-w-sm">
+                                This tag hasn&apos;t been applied to any contacts yet.
+                            </p>
+                        </div>
                     )}
                 </div>
 
-                <div className="border-t p-3 flex justify-center">
-                    <NumberPager current={page} total={Math.max(1, data.last)} onPage={setPage} />
-                </div>
+                {/* Footer with pagination */}
+                {!loading && data.items.length > 0 && (
+                    <div className="border-t bg-white p-4 flex justify-center">
+                        <NumberPager current={page} total={Math.max(1, data.last)} onPage={setPage} />
+                    </div>
+                )}
             </div>
         </div>
     );
+}
+
+// Helper function to get initials from name
+function initials(name?: string): string {
+    if (!name) return '?';
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((s) => s[0]?.toUpperCase())
+        .join('');
 }

@@ -9,7 +9,7 @@ export default function ContactList({
     page,
     last,
     onPage,
-    selectedId,          // 👈 có thể undefined
+    selectedId,
     onSelect,
     onDelete,
     loading,

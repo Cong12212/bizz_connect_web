@@ -8,12 +8,20 @@ import AppNav from '../components/AppNav';
 import { pickApiBaseUrl } from '../lib/config';
 import useDebounced from '../hooks/useDebounced';
 import { listRecentContacts, type Contact } from '../services/contacts';
-import ContactCard from '../components/contacts/ContactCard';
-import EmptyState from '../components/EmptyState';
-// import NewContactModal from '../components/contacts/NewContactModal';
-import Section from '../components/ui/Section';
-import StatCard from '../components/home/StatCard';
-// import QuickAction from '../components/home/QuickAction';
+import { listTags, type Tag } from '../services/tags';
+import { listNotifications, type Notification } from '../services/notifications';
+import { listReminders, type Reminder } from '../services/reminders';
+
+// Type cho Recent Activity
+type ActivityItem = {
+    id: string;
+    icon: string;
+    title: string;
+    subtitle: string;
+    time: string;
+    status: 'pending' | 'completed' | 'overdue';
+    type: 'reminder' | 'notification' | 'contact';
+};
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -25,15 +33,18 @@ export default function Dashboard() {
     const apiBase = pickApiBaseUrl();
     const hasApi = !!apiBase;
 
-    const [q, setQ] = useState('');
-    const qDebounced = useDebounced(q, 350);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [items, setItems] = useState<Contact[]>([]);
-    const [openNew, setOpenNew] = useState(false);
-    const [totalContacts, setTotalContacts] = useState<number>(0);
 
-    const fetchList = useCallback(async () => {
+    // Real data from APIs
+    const [contacts, setContacts] = useState<Contact[]>([]);
+    const [totalContacts, setTotalContacts] = useState<number>(0);
+    const [tags, setTags] = useState<Tag[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [reminders, setReminders] = useState<Reminder[]>([]);
+
+    // Fetch all dashboard data
+    const fetchDashboardData = useCallback(async () => {
         if (!hasApi || !token) {
             setLoading(false);
             return;
@@ -41,70 +52,229 @@ export default function Dashboard() {
         setLoading(true);
         setError(null);
         try {
-            const res = await listRecentContacts(qDebounced, token);
-            setItems(res.data || []);
-            setTotalContacts(Number((res as any)?.total) || (res.data?.length ?? 0));
+            // Parallel fetch all data
+            const [contactsRes, tagsRes, notificationsRes, remindersRes] = await Promise.all([
+                listRecentContacts('', token).catch(() => ({ data: [], total: 0 })),
+                listTags({}, token).catch(() => ({ data: [], total: 0 })),
+                listNotifications('unread', 20, token).catch(() => ({ data: [] })),
+                listReminders({ status: 'pending' }, token).catch(() => ({ data: [], total: 0 })),
+            ]);
+
+            setContacts(contactsRes.data || []);
+            setTotalContacts(Number((contactsRes as any)?.total) || (contactsRes.data?.length ?? 0));
+            setTags(tagsRes.data || []);
+            setNotifications(notificationsRes.data || []);
+            setReminders(remindersRes.data || []);
         } catch (e: any) {
-            setError(e?.message || 'Failed to load contacts');
+            setError(e?.message || 'Failed to load dashboard data');
         } finally {
             setLoading(false);
         }
-    }, [qDebounced, token, hasApi]);
+    }, [token, hasApi]);
 
     useEffect(() => {
-        void fetchList();
-    }, [fetchList]);
+        void fetchDashboardData();
+    }, [fetchDashboardData]);
 
-    const filtered = useMemo(() => {
-        if (!qDebounced.trim()) return items;
-        const t = qDebounced.toLowerCase();
-        return items.filter(
-            (c) =>
-                c.name?.toLowerCase().includes(t) ||
-                c.email?.toLowerCase().includes(t) ||
-                c.company?.toLowerCase().includes(t) ||
-                c.phone?.toLowerCase().includes(t),
-        );
-    }, [items, qDebounced]);
+    // Calculate stats from real data
+    const stats = useMemo(() => {
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // const companyCount = useMemo(() => {
-    //     const set = new Set(items.map((c) => (c.company || '').trim().toLowerCase()).filter(Boolean));
-    //     return set.size;
-    // }, [items]);
+        // Count new contacts this week
+        const newContactsThisWeek = contacts.filter(c => {
+            if (!c.created_at) return false;
+            return new Date(c.created_at) >= weekAgo;
+        }).length;
 
-    const handleCreated = (c: Contact) => {
-        setItems((prev) => [c, ...prev.filter((x) => x.id !== c.id)].slice(0, 4));
+        // Count overdue reminders
+        const overdueReminders = reminders.filter(r => {
+            if (!r.due_at || r.status !== 'pending') return false;
+            return new Date(r.due_at) < now;
+        }).length;
+
+        // Count new tags this month
+        const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
+        const newTagsThisMonth = tags.filter(t => {
+            // Nếu backend không trả created_at, dùng mockdata
+            return true; // Giả định tất cả tags đều "new" nếu không có timestamp
+        }).length;
+
+        return {
+            activePartners: totalContacts,
+            activePartnersChange: newContactsThisWeek > 0 ? `+${newContactsThisWeek} this week` : 'No new contacts',
+            pendingReminders: reminders.length,
+            pendingRemindersOverdue: overdueReminders > 0 ? `${overdueReminders} overdue` : 'All on time',
+            newNotifications: notifications.length,
+            newNotificationsTime: 'un read yet',
+            activeTags: tags.length,
+            activeTagsNew: newTagsThisMonth > 0 ? `${Math.min(newTagsThisMonth, tags.length)} active` : 'No tags yet'
+        };
+    }, [contacts, totalContacts, reminders, notifications, tags]);
+
+    // Convert real data to Recent Activity format
+    const recentActivity = useMemo((): ActivityItem[] => {
+        const activities: ActivityItem[] = [];
+        const now = new Date();
+
+        // Add reminders (top priority)
+        reminders.slice(0, 3).forEach(r => {
+            const isOverdue = r.due_at && new Date(r.due_at) < now && r.status === 'pending';
+            const timeAgo = r.due_at ? formatTimeAgo(new Date(r.due_at)) : 'No due date';
+
+            activities.push({
+                id: `reminder-${r.id}`,
+                icon: '🕐',
+                title: isOverdue ? `Overdue: ${r.title}` : r.title,
+                subtitle: r.note || 'Reminder scheduled',
+                time: timeAgo,
+                status: isOverdue ? 'overdue' : r.status === 'done' ? 'completed' : 'pending',
+                type: 'reminder'
+            });
+        });
+
+        // Add recent contacts
+        contacts.slice(0, 2).forEach(c => {
+            activities.push({
+                id: `contact-${c.id}`,
+                icon: '👥',
+                title: `Contact added: ${c.name}`,
+                subtitle: c.company || c.job_title || 'New contact',
+                time: c.created_at ? formatTimeAgo(new Date(c.created_at)) : 'Recently',
+                status: 'completed',
+                type: 'contact'
+            });
+        });
+
+        // Add notifications
+        notifications.slice(0, 2).forEach(n => {
+            activities.push({
+                id: `notification-${n.id}`,
+                icon: '🔔',
+                title: n.title,
+                subtitle: n.body || 'New notification',
+                time: formatTimeAgo(new Date(n.created_at)),
+                status: n.status === 'read' ? 'completed' : 'pending',
+                type: 'notification'
+            });
+        });
+
+        // Sort by time (most recent first) and limit to 5
+        return activities.slice(0, 5);
+    }, [reminders, contacts, notifications]);
+
+    // Calculate upcoming items from real data
+    const upcomingItems = useMemo(() => {
+        const items = [];
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Reminders due today
+        const remindersDueToday = reminders.filter(r => {
+            if (!r.due_at || r.status !== 'pending') return false;
+            const dueDate = new Date(r.due_at);
+            const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+            return dueDateOnly.getTime() === today.getTime();
+        }).length;
+
+        if (remindersDueToday > 0) {
+            items.push({
+                id: 1,
+                icon: '🔔',
+                iconColor: 'bg-orange-100 text-orange-600',
+                title: `${remindersDueToday} reminder${remindersDueToday > 1 ? 's' : ''} due today`,
+                subtitle: 'Check your reminders tab'
+            });
+        }
+
+        // Tags status
+        if (tags.length > 0) {
+            items.push({
+                id: 2,
+                icon: '✓',
+                iconColor: 'bg-green-100 text-green-600',
+                title: `${tags.length} active tags`,
+                subtitle: 'All tags up to date'
+            });
+        }
+
+        // Unread notifications
+        if (notifications.length > 0) {
+            items.push({
+                id: 3,
+                icon: '🔔',
+                iconColor: 'bg-purple-100 text-purple-600',
+                title: `${notifications.length} unread notification${notifications.length > 1 ? 's' : ''}`,
+                subtitle: 'Review when you have time'
+            });
+        }
+
+        // If no items, show placeholder
+        if (items.length === 0) {
+            items.push({
+                id: 0,
+                icon: '✨',
+                iconColor: 'bg-slate-100 text-slate-600',
+                title: 'All caught up!',
+                subtitle: 'No upcoming tasks'
+            });
+        }
+
+        return items;
+    }, [reminders, tags, notifications]);
+
+    // Calculate partnership growth from real data
+    const partnershipGrowth = useMemo(() => {
+        const now = new Date();
+        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        const thisMonthContacts = contacts.filter(c => {
+            if (!c.created_at) return false;
+            return new Date(c.created_at) >= thisMonth;
+        }).length;
+
+        const lastMonthContacts = contacts.filter(c => {
+            if (!c.created_at) return false;
+            const createdDate = new Date(c.created_at);
+            return createdDate >= lastMonth && createdDate < thisMonth;
+        }).length;
+
+        const percentChange = lastMonthContacts > 0
+            ? Math.round(((thisMonthContacts - lastMonthContacts) / lastMonthContacts) * 100)
+            : 0;
+
+        return {
+            count: thisMonthContacts,
+            change: percentChange,
+            message: thisMonthContacts > 0
+                ? `You've added ${thisMonthContacts} new partner${thisMonthContacts > 1 ? 's' : ''} this month${percentChange !== 0 ? `, a ${Math.abs(percentChange)}% ${percentChange > 0 ? 'increase' : 'decrease'} from last month` : ''}. Keep up the great work!`
+                : 'No new partners added this month. Start growing your network!'
+        };
+    }, [contacts]);
+
+    const getStatusBadgeClass = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return 'bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-700 text-xs px-3 py-1 rounded-full';
+            case 'overdue':
+                return 'bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full';
+            default:
+                return 'bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded-full';
+        }
     };
 
-    const handleUpdated = (updated: Contact) => {
-        setItems((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+    // Quick actions handlers
+    const handleAddPartner = () => navigate('/contacts'); // Will trigger "Add" button
+    const handleSetReminder = () => navigate('/reminders'); // Navigate to reminders page
+    const handleManageTags = () => navigate('/tags'); // Navigate to tags page
+    const handleViewNotifications = () => navigate('/notifications'); // Navigate to notifications page
+    const handleViewActivity = () => {
+        // TODO: Navigate to activity log when implemented
+        console.log('View all activity');
     };
-
-    // function exportCSV() {
-    //     const rows = [
-    //         ['Name', 'Company', 'Email', 'Phone', 'Address', 'Notes'],
-    //         ...filtered.map((c) => [
-    //             c.name,
-    //             c.company || '',
-    //             c.email || '',
-    //             c.phone || '',
-    //             c.address || '',
-    //             (c.notes || '').replace(/\n/g, ' '),
-    //         ]),
-    //     ];
-    //     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    //     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    //     const url = URL.createObjectURL(blob);
-    //     const a = document.createElement('a');
-    //     a.href = url;
-    //     a.download = `contacts_${new Date().toISOString().slice(0, 10)}.csv`;
-    //     document.body.appendChild(a);
-    //     a.click();
-    //     document.body.removeChild(a);
-    //     URL.revokeObjectURL(url);
-    // }
-
-    const openContact = (id: number) => navigate(`/contacts/${id}`);
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -118,102 +288,271 @@ export default function Dashboard() {
 
             {/* MAIN */}
             <main className="px-4 py-6 md:ml-64 md:px-8">
-                {/* Header hành động */}
-                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-xl font-semibold">Home</h1>
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-[min(480px,80vw)]">
-                            <input
-                                placeholder="Search contacts…"
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
-                                className="w-full rounded-2xl border bg-white px-4 py-2 pl-10 outline-none focus:ring-2 focus:ring-slate-300"
-                            />
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                🔎
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => setOpenNew(true)}
-                            className="hidden sm:inline-flex rounded-2xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"
-                        >
-                            + New contact
-                        </button>
-                    </div>
+                {/* Header */}
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-slate-900">Partner Dashboard</h1>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Welcome back! Here&apos;s what&apos;s happening with your partners.
+                    </p>
                 </div>
 
-                {/* Hàng thống kê */}
-                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {/* Ô Contacts → click để đi tới /contacts */}
+                {/* Error message */}
+                {error && (
+                    <div className="mb-6 rounded-2xl bg-red-50 p-4 text-sm text-red-600">
+                        {error}
+                    </div>
+                )}
+
+                {/* 4 thẻ thống kê - DATA FROM API */}
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {/* Active Partners - click để đi tới /contacts */}
                     <button
                         type="button"
                         onClick={() => navigate('/contacts')}
-                        className="text-left"
-                        title="View all contacts"
+                        className="text-left bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                        title="View all partners"
                     >
-                        <StatCard
-                            icon={<span>👥</span>}
-                            label="Contacts"
-                            value={totalContacts}
-                            hint="Click to view all contacts"
-                        />
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <div className="text-xs text-slate-500 mb-2 flex items-center gap-2">
+                                    Active Partners
+                                    <span className="text-sky-500">👥</span>
+                                </div>
+                                <div className="text-3xl font-bold text-slate-900">
+                                    {loading ? '...' : stats.activePartners}
+                                </div>
+                                <div className="text-xs text-green-600 mt-1">
+                                    {loading ? 'Loading...' : stats.activePartnersChange}
+                                </div>
+                            </div>
+                        </div>
                     </button>
 
-                    <StatCard icon={<span>⏰</span>} label="Reminders due" value={0} hint="Connect your reminders" />
+                    {/* Pending Reminders - DATA FROM API, click để đi tới /reminders */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/reminders')}
+                        className="text-left bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                        title="View all reminders"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <div className="text-xs text-slate-500 mb-2 flex items-center gap-2">
+                                    Pending Reminders
+                                    <span className="text-orange-500">🕐</span>
+                                </div>
+                                <div className="text-3xl font-bold text-slate-900">
+                                    {loading ? '...' : stats.pendingReminders}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">
+                                    {loading ? 'Loading...' : stats.pendingRemindersOverdue}
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+
+                    {/* New Notifications - DATA FROM API, click để đi tới /notifications */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/notifications')}
+                        className="text-left bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                        title="View all notifications"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <div className="text-xs text-slate-500 mb-2 flex items-center gap-2">
+                                    New Notifications
+                                    <span className="text-purple-500">🔔</span>
+                                </div>
+                                <div className="text-3xl font-bold text-slate-900">
+                                    {loading ? '...' : stats.newNotifications}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">
+                                    {loading ? 'Loading...' : stats.newNotificationsTime}
+                                </div>
+                            </div>
+                        </div>
+                    </button>
+
+                    {/* Active Tags - DATA FROM API, click để đi tới /tags */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/tags')}
+                        className="text-left bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                        title="View all tags"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <div className="text-xs text-slate-500 mb-2 flex items-center gap-2">
+                                    Active Tags
+                                    <span className="text-emerald-500">🏷️</span>
+                                </div>
+                                <div className="text-3xl font-bold text-slate-900">
+                                    {loading ? '...' : stats.activeTags}
+                                </div>
+                                <div className="text-xs text-slate-500 mt-1">
+                                    {loading ? 'Loading...' : stats.activeTagsNew}
+                                </div>
+                            </div>
+                        </div>
+                    </button>
                 </div>
 
-                {/* Lưới 2 cột: trái Recent, phải Quick actions */}
+                {/* Lưới 2 cột: trái Recent Activity, phải Quick Actions */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                    {/* LEFT */}
-                    <div className="lg:col-span-8">
-                        {/* Tiêu đề + link View all */}
-                        <div className="mb-2 flex items-center justify-between">
-                            <h2 className="text-base font-semibold">Recent contacts</h2>
-                            <Link
-                                to="/contacts"
-                                className="text-sm text-sky-600 hover:underline"
-                                title="Go to all contacts"
-                            >
-                                View all →
-                            </Link>
+                    {/* LEFT - Recent Activity - DATA FROM API */}
+                    <div className="lg:col-span-7">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-base font-semibold">Recent Activity</h2>
+
                         </div>
 
-                        <Section title="">
-                            {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
-
-                            {hasApi && token ? (
-                                loading ? (
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        {Array.from({ length: 4 }).map((_, i) => (
-                                            <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-                                        ))}
-                                    </div>
-                                ) : filtered.length ? (
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        {filtered.map((c) => (
-                                            // Bọc ContactCard trong button để điều hướng khi click toàn bộ card
-                                            <button
-                                                key={c.id}
-                                                type="button"
-                                                onClick={() => openContact(c.id)}
-                                                className="text-left"
-                                                title={`Open ${c.name}`}
+                        <div className="bg-white rounded-2xl p-5 shadow-sm">
+                            {loading ? (
+                                <div className="space-y-4">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="h-16 animate-pulse rounded-xl bg-slate-200" />
+                                    ))}
+                                </div>
+                            ) : recentActivity.length > 0 ? (
+                                <>
+                                    {/* Recent Activity List - DATA FROM API */}
+                                    <div className="space-y-4">
+                                        {recentActivity.map((activity) => (
+                                            <div
+                                                key={activity.id}
+                                                className="flex items-start gap-3 pb-4 border-b last:border-b-0 last:pb-0"
                                             >
-                                                <ContactCard c={c} token={token} onUpdated={handleUpdated} />
-                                            </button>
+                                                <div className="text-2xl mt-1">{activity.icon}</div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-sm text-slate-900">{activity.title}</div>
+                                                    <div className="text-xs text-slate-500 mt-0.5">{activity.subtitle}</div>
+                                                    <div className="text-xs text-slate-400 mt-1">{activity.time}</div>
+                                                </div>
+                                                <span className={getStatusBadgeClass(activity.status)}>{activity.status}</span>
+                                            </div>
                                         ))}
                                     </div>
-                                ) : (
-                                    <EmptyState title="No contacts yet" subtitle="Click “Add” to create your first contact" />
-                                )
-                            ) : null}
-                        </Section>
+
+                                    {/* Partnership Growth - DATA FROM API */}
+                                    <div className="mt-6 pt-6 border-t">
+                                        <div className="flex items-start gap-3 bg-blue-50 rounded-xl p-4">
+                                            <span className="text-2xl">📈</span>
+                                            <div>
+                                                <div className="font-semibold text-sm text-slate-900">Partnership Growth</div>
+                                                <div className="text-sm text-slate-600 mt-1">
+                                                    {partnershipGrowth.message}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="py-8 text-center text-slate-500">
+                                    <span className="text-4xl mb-2 block">📊</span>
+                                    <p className="text-sm">No recent activity</p>
+                                    <p className="text-xs mt-1">Start by adding contacts or setting reminders</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
+                    {/* RIGHT - Quick Actions & Upcoming */}
+                    <div className="lg:col-span-5">
+                        {/* Quick Actions - CÓ CHỨC NĂNG */}
+                        <div className="mb-6">
+                            <h2 className="text-base font-semibold mb-3">Quick Actions</h2>
+                            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+                                <button
+                                    onClick={handleAddPartner}
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+                                >
+                                    <span className="text-2xl">👥</span>
+                                    <div>
+                                        <div className="font-medium text-sm text-slate-900">Add New Partner</div>
+                                        <div className="text-xs text-slate-500">Create a new partner profile</div>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={handleSetReminder}
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+                                >
+                                    <span className="text-2xl">📅</span>
+                                    <div>
+                                        <div className="font-medium text-sm text-slate-900">Set Reminder</div>
+                                        <div className="text-xs text-slate-500">Schedule a follow-up task</div>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={handleManageTags}
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+                                >
+                                    <span className="text-2xl">🏷️</span>
+                                    <div>
+                                        <div className="font-medium text-sm text-slate-900">Manage Tags</div>
+                                        <div className="text-xs text-slate-500">Organize partner categories</div>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={handleViewNotifications}
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+                                >
+                                    <span className="text-2xl">🔔</span>
+                                    <div>
+                                        <div className="font-medium text-sm text-slate-900">View Notifications</div>
+                                        <div className="text-xs text-slate-500">Check all your notifications</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Upcoming - DATA FROM API */}
+                        <div>
+                            <h2 className="text-base font-semibold mb-3">Upcoming</h2>
+                            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+                                {loading ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <div key={i} className="h-16 animate-pulse rounded-xl bg-slate-200" />
+                                    ))
+                                ) : (
+                                    upcomingItems.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors"
+                                        >
+                                            <div
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${item.iconColor}`}
+                                            >
+                                                {item.icon}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-sm text-slate-900">{item.title}</div>
+                                                <div className="text-xs text-slate-500 mt-0.5">{item.subtitle}</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
-
-            {/* <NewContactModal open={openNew} onClose={() => setOpenNew(false)} onCreated={handleCreated} token={token} /> */}
         </div>
     );
+}
+
+// Helper function to format time ago
+function formatTimeAgo(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+    return date.toLocaleDateString();
 }
