@@ -891,11 +891,6 @@ Special thanks to:
 ![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/bizconnect)
 ![GitHub repo size](https://img.shields.io/github/repo-size/yourusername/bizconnect)
 
----
-
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/bizconnect&type=Date)](https://star-history.com/#yourusername/bizconnect&Date)
 
 ---
 
@@ -943,52 +938,6 @@ If you discover a security vulnerability, please email security@bizconnect.com i
 - iOS Safari 14+ ✅
 - Android Chrome 90+ ✅
 - Samsung Internet 14+ ✅
-
----
-
-## 📱 Screenshots
-
-### Dashboard
-<div align="center">
-  <img src="docs/images/dashboard.png" alt="Dashboard" width="700"/>
-  <p><em>Main dashboard with statistics, recent activities, and quick actions</em></p>
-</div>
-
-### Contacts Management
-<div align="center">
-  <img src="docs/images/contacts.png" alt="Contacts" width="700"/>
-  <p><em>Contact list with advanced search, filtering, and bulk operations</em></p>
-</div>
-
-### Contact Details
-<div align="center">
-  <img src="docs/images/contact-detail.png" alt="Contact Detail" width="700"/>
-  <p><em>Comprehensive contact information with tags and actions</em></p>
-</div>
-
-### Reminders
-<div align="center">
-  <img src="docs/images/reminders.png" alt="Reminders" width="700"/>
-  <p><em>Reminder management with status tracking and filtering</em></p>
-</div>
-
-### Tags Management
-<div align="center">
-  <img src="docs/images/tags.png" alt="Tags" width="700"/>
-  <p><em>Tag overview with contact counts and management options</em></p>
-</div>
-
-### Digital Business Card
-<div align="center">
-  <img src="docs/images/business-card.png" alt="Business Card" width="700"/>
-  <p><em>Professional digital business card with sharing capabilities</em></p>
-</div>
-
-### Mobile Responsive
-<div align="center">
-  <img src="docs/images/mobile.png" alt="Mobile View" width="300"/>
-  <p><em>Fully responsive design optimized for mobile devices</em></p>
-</div>
 
 ---
 
