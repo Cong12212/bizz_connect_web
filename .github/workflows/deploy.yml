@@ -2,79 +2,79 @@ name: Deploy Frontend to Hostinger
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout Frontend code
-      uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    
-    - name: Enable Corepack
-      run: corepack enable
-    
-    - name: Install dependencies with Yarn
-      run: yarn install --immutable
-    
-    - name: Build Vite app
-      env:
-        VITE_API_URL: https://biz-connect.online/backend/public/api
-      run: yarn build
-    
-    - name: Setup SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-    
-    - name: Deploy Frontend via rsync
-      run: |
-        rsync -avz --progress --delete \
-          -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
-          --exclude='backend' \
-          ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/u564264509/domains/biz-connect.online/public_html/
-    
-    - name: Setup .htaccess for React Router
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        port: ${{ secrets.SSH_PORT }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd /home/u564264509/domains/biz-connect.online/public_html
-          
-          cat > .htaccess << 'EOF'
-          <IfModule mod_rewrite.c>
-              RewriteEngine On
-              RewriteBase /
-              
-              # Force HTTPS
-              RewriteCond %{HTTPS} off
-              RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-              
-              # API routes -> Laravel backend
-              RewriteRule ^api/(.*)$ /backend/public/api/$1 [L,QSA]
-              
-              # Backend routes
-              RewriteRule ^backend/(.*)$ /backend/public/$1 [L,QSA]
-              
-              # React Router - Frontend
-              RewriteCond %{REQUEST_URI} !^/backend/
-              RewriteCond %{REQUEST_FILENAME} !-f
-              RewriteCond %{REQUEST_FILENAME} !-d
-              RewriteRule . /index.html [L]
-          </IfModule>
-          EOF
-          
-          echo "===== Frontend deployed successfully! ====="
-          echo "URL: https://biz-connect.online"
+      - name: Checkout Frontend code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies with Yarn
+        run: yarn install --immutable
+
+      - name: Build Vite app
+        env:
+          VITE_API_URL: https://biz-connect.online/backend/public/api
+        run: yarn build
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy Frontend via rsync
+        run: |
+          rsync -avz --progress --delete \
+            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+            --exclude='backend' \
+            ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/u564264509/domains/biz-connect.online/public_html/
+
+      - name: Setup .htaccess for React Router
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/u564264509/domains/biz-connect.online/public_html
+
+            cat > .htaccess << 'EOF'
+            <IfModule mod_rewrite.c>
+                RewriteEngine On
+                RewriteBase /
+                
+                # Force HTTPS
+                RewriteCond %{HTTPS} off
+                RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+                
+                # API routes -> Laravel backend
+                RewriteRule ^api/(.*)$ /backend/public/api/$1 [L,QSA]
+                
+                # Backend routes
+                RewriteRule ^backend/(.*)$ /backend/public/$1 [L,QSA]
+                
+                # React Router - Frontend
+                RewriteCond %{REQUEST_URI} !^/backend/
+                RewriteCond %{REQUEST_FILENAME} !-f
+                RewriteCond %{REQUEST_FILENAME} !-d
+                RewriteRule . /index.html [L]
+            </IfModule>
+            EOF
+
+            echo "===== Frontend deployed successfully! ====="
+            echo "URL: https://biz-connect.online"
