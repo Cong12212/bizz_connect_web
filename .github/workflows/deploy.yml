@@ -18,13 +18,11 @@ jobs:
       with:
         node-version: '18'
     
-    - name: Enable Corepack and setup Yarn
-      run: |
-        corepack enable
-        corepack prepare yarn@stable --activate
+    - name: Enable Corepack
+      run: corepack enable
     
     - name: Install dependencies with Yarn
-      run: yarn install --frozen-lockfile
+      run: yarn install --immutable
     
     - name: Build Vite app
       env:
