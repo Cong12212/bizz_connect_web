@@ -18,13 +18,18 @@ jobs:
       with:
         node-version: '18'
     
-    - name: Install dependencies
-      run: npm install --legacy-peer-deps
+    - name: Enable Corepack and setup Yarn
+      run: |
+        corepack enable
+        corepack prepare yarn@stable --activate
+    
+    - name: Install dependencies with Yarn
+      run: yarn install --frozen-lockfile
     
     - name: Build Vite app
       env:
         VITE_API_URL: https://biz-connect.online/backend/public/api
-      run: npm run build
+      run: yarn build
     
     - name: Setup SSH key
       run: |
@@ -73,4 +78,5 @@ jobs:
           </IfModule>
           EOF
           
-          echo "===== Frontend deployed! ====="
+          echo "===== Frontend deployed successfully! ====="
+          echo "URL: https://biz-connect.online"
