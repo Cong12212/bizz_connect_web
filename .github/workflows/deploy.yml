@@ -1,0 +1,85 @@
+name: Deploy Frontend to Hostinger
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Frontend code
+              uses: actions/checkout@v3
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "18"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build React app
+              env:
+                  # Nếu dùng Create React App
+                  REACT_APP_API_URL: https://biz-connect.online/backend/public/api
+                  # Nếu dùng Vite thì dùng VITE_API_URL thay vì REACT_APP_API_URL
+              run: npm run build
+
+            - name: Setup SSH key
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
+                  ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+            - name: Deploy Frontend via rsync
+              run: |
+                  rsync -avz --progress --delete \
+                    -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+                    --exclude='backend' \
+                    ./build/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/u564264509/domains/biz-connect.online/public_html/
+                  # Chú ý: Nếu dùng Vite thì ./dist/ thay vì ./build/
+
+            - name: Setup .htaccess for React Router
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  port: ${{ secrets.SSH_PORT }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  script: |
+                      cd /home/u564264509/domains/biz-connect.online/public_html
+
+                      # Backup htaccess cũ
+                      cp .htaccess .htaccess.backup || true
+
+                      # Tạo .htaccess mới cho React + Laravel
+                      cat > .htaccess << 'EOF'
+                      <IfModule mod_rewrite.c>
+                          RewriteEngine On
+                          RewriteBase /
+                          
+                          # Force HTTPS
+                          RewriteCond %{HTTPS} off
+                          RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+                          
+                          # API routes -> Laravel backend
+                          RewriteRule ^api/(.*)$ /backend/public/api/$1 [L,QSA]
+                          
+                          # Backend admin/documentation routes
+                          RewriteRule ^backend/(.*)$ /backend/public/$1 [L,QSA]
+                          
+                          # React Router - Frontend routes
+                          RewriteCond %{REQUEST_URI} !^/backend/
+                          RewriteCond %{REQUEST_FILENAME} !-f
+                          RewriteCond %{REQUEST_FILENAME} !-d
+                          RewriteRule . /index.html [L]
+                      </IfModule>
+                      EOF
+
+                      echo "===== Frontend deployed successfully! ====="
+                      echo "URL: https://biz-connect.online"
