@@ -24,24 +24,33 @@ const initialState: AuthState = {
 /* ---------------- Thunks ---------------- */
 export const registerThunk = createAsyncThunk(
     "auth/register",
-    async (payload: { name?: string; email: string; password: string }) => {
-        const { data } = await api.post("/auth/register", payload);
-        const user: User | null = (data.user as User) ?? null;
-        // Nếu BE không trả token ở register, dòng dưới sẽ fail -> đảm bảo BE có hoặc đổi logic
-        const token: string | undefined = data.token;
-        const verified = Boolean((data.verified as boolean | undefined) ?? user?.email_verified_at);
-        return { token, user, verified, message: data.message as string };
+    async (payload: { name?: string; email: string; password: string }, { rejectWithValue }) => {
+        try {
+            const { data } = await api.post("/auth/register", payload);
+            const user: User | null = (data.user as User) ?? null;
+            const token: string | undefined = data.token;
+            const verified = Boolean((data.verified as boolean | undefined) ?? user?.email_verified_at);
+            return { token, user, verified, message: data.message as string };
+        } catch (err: any) {
+            // Pass the entire error response to the component
+            return rejectWithValue(err);
+        }
     }
 );
 
 export const loginThunk = createAsyncThunk(
     "auth/login",
-    async (payload: { email: string; password: string }) => {
-        const { data } = await api.post("/auth/login", payload);
-        const user: User = data.user;
-        const token: string = data.token;
-        const verified = Boolean((data.verified as boolean | undefined) ?? user?.email_verified_at);
-        return { token, user, verified };
+    async (payload: { email: string; password: string }, { rejectWithValue }) => {
+        try {
+            const { data } = await api.post("/auth/login", payload);
+            const user: User = data.user;
+            const token: string = data.token;
+            const verified = Boolean((data.verified as boolean | undefined) ?? user?.email_verified_at);
+            return { token, user, verified };
+        } catch (err: any) {
+            // Pass the entire error response to the component
+            return rejectWithValue(err);
+        }
     }
 );
 
@@ -66,22 +75,34 @@ export const resendVerifyThunk = createAsyncThunk("auth/resend", async () => {
 
 export const requestPwReset = createAsyncThunk(
     "auth/requestPwReset",
-    async ({ email, newPassword }: { email: string; newPassword: string }) => {
-        const { data } = await api.post("/auth/password/request", { email, new_password: newPassword });
-        return data as { message: string };
+    async ({ email, newPassword }: { email: string; newPassword: string }, { rejectWithValue }) => {
+        try {
+            const { data } = await api.post("/auth/password/request", { email, new_password: newPassword });
+            return data as { message: string };
+        } catch (err: any) {
+            return rejectWithValue(err);
+        }
     }
 );
 
-export const resendPwCode = createAsyncThunk("auth/resendPwCode", async (email: string) => {
-    const { data } = await api.post("/auth/password/resend", { email });
-    return data as { message: string };
+export const resendPwCode = createAsyncThunk("auth/resendPwCode", async (email: string, { rejectWithValue }) => {
+    try {
+        const { data } = await api.post("/auth/password/resend", { email });
+        return data as { message: string };
+    } catch (err: any) {
+        return rejectWithValue(err);
+    }
 });
 
 export const verifyPwReset = createAsyncThunk(
     "auth/verifyPwReset",
-    async ({ email, code }: { email: string; code: string }) => {
-        const { data } = await api.post("/auth/password/verify", { email, code });
-        return data as { message: string };
+    async ({ email, code }: { email: string; code: string }, { rejectWithValue }) => {
+        try {
+            const { data } = await api.post("/auth/password/verify", { email, code });
+            return data as { message: string };
+        } catch (err: any) {
+            return rejectWithValue(err);
+        }
     }
 );
 

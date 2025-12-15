@@ -32,8 +32,20 @@ export default function LoginForm({
             const status = e?.response?.status ?? e?.status;
             if (status === 403) return nav("/verify-email", { replace: true });
 
-            // Extract error message from backend
-            const msg = e?.response?.data?.message || e?.message || "Invalid credentials";
+            // Extract error message from backend response - handle Laravel validation errors
+            let msg = "Invalid credentials";
+            if (e?.response?.data?.errors) {
+                // Handle Laravel validation errors - get first error message
+                const errors = e.response.data.errors;
+                const firstError = Object.values(errors)[0];
+                if (Array.isArray(firstError) && firstError.length > 0) {
+                    msg = firstError[0] as string;
+                }
+            } else if (e?.response?.data?.message) {
+                msg = e.response.data.message;
+            } else if (e?.message) {
+                msg = e.message;
+            }
             setErr(msg);
         } finally {
             setSubmitting(false);
