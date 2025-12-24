@@ -3,4 +3,9 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: { extend: {} },
     plugins: [],
+    safelist: [
+        {
+            pattern: /^(bg|text|border|from|to|via)-.*/,
+        },
+    ],
 };
