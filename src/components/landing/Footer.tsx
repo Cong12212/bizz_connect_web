@@ -14,28 +14,28 @@ const Footer: React.FC = () => {
 
     const footerLinks: FooterLinks = {
         product: [
-            { name: 'Tính năng', href: '#features' },
-            { name: 'Giá cả', href: '#pricing' },
-            { name: 'Bảo mật', href: '#security' },
+            { name: 'Features', href: '#features' },
+            { name: 'Pricing', href: '#pricing' },
+            { name: 'Security', href: '#security' },
             { name: 'Roadmap', href: '#roadmap' },
         ],
         company: [
-            { name: 'Về chúng tôi', href: '#about' },
+            { name: 'About Us', href: '#about' },
             { name: 'Blog', href: '#blog' },
             { name: 'Careers', href: '#careers' },
-            { name: 'Liên hệ', href: '#contact' },
+            { name: 'Contact', href: '#contact' },
         ],
         resources: [
-            { name: 'Tài liệu', href: '#docs' },
+            { name: 'Documentation', href: '#docs' },
             { name: 'API', href: '#api' },
-            { name: 'Hỗ trợ', href: '#support' },
+            { name: 'Support', href: '#support' },
             { name: 'FAQ', href: '#faq' },
         ],
         legal: [
-            { name: 'Điều khoản', href: '#terms' },
-            { name: 'Bảo mật', href: '#privacy' },
+            { name: 'Terms', href: '#terms' },
+            { name: 'Privacy', href: '#privacy' },
             { name: 'Cookies', href: '#cookies' },
-            { name: 'Giấy phép', href: '#license' },
+            { name: 'License', href: '#license' },
         ],
     };
 
@@ -43,10 +43,10 @@ const Footer: React.FC = () => {
 
     const getCategoryTitle = (category: string): string => {
         const titles: Record<string, string> = {
-            product: 'Sản phẩm',
-            company: 'Công ty',
-            resources: 'Tài nguyên',
-            legal: 'Pháp lý',
+            product: 'Product',
+            company: 'Company',
+            resources: 'Resources',
+            legal: 'Legal',
         };
         return titles[category] || category;
     };
@@ -63,7 +63,7 @@ const Footer: React.FC = () => {
                             <span className="text-white font-bold text-xl">Bizz-Connect</span>
                         </div>
                         <p className="text-sm text-gray-400 leading-relaxed">
-                            Nền tảng kết nối doanh nghiệp thông minh, giúp bạn quản lý và phát triển mạng lưới kinh doanh hiệu quả.
+                            Smart business connection platform, helping you manage and grow your business network effectively.
                         </p>
 
                         <div className="flex gap-4 mt-6">

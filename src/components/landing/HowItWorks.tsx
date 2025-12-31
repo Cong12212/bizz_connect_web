@@ -18,20 +18,20 @@ const HowItWorks: React.FC = () => {
     const steps: Step[] = [
         {
             number: '01',
-            title: 'Đăng ký tài khoản',
-            description: 'Tạo tài khoản miễn phí trong vài giây, không cần thẻ tín dụng',
+            title: 'Create Account',
+            description: 'Sign up for free in seconds, no credit card required',
             icon: '👤',
         },
         {
             number: '02',
-            title: 'Thêm liên hệ',
-            description: 'Import danh bạ hoặc thêm thủ công, tạo business card kỹ thuật số',
+            title: 'Add Contacts',
+            description: 'Import contacts or add manually, create digital business cards',
             icon: '📱',
         },
         {
             number: '03',
-            title: 'Kết nối & Phát triển',
-            description: 'Quản lý quan hệ, đặt nhắc nhở và theo dõi hiệu suất',
+            title: 'Connect & Grow',
+            description: 'Manage relationships, set reminders and track performance',
             icon: '🚀',
         },
     ];
@@ -47,10 +47,10 @@ const HowItWorks: React.FC = () => {
                     className="text-center mb-16"
                 >
                     <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Cách hoạt động
+                        How It Works
                     </h2>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Ba bước đơn giản để bắt đầu hành trình kết nối của bạn
+                        Three simple steps to start your connection journey
                     </p>
                 </motion.div>
 

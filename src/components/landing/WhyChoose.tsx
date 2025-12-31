@@ -16,33 +16,33 @@ const WhyChoose: React.FC = () => {
 
     const benefits: Benefit[] = [
         {
-            title: 'Kết nối mọi lúc, mọi nơi',
-            description: 'Truy cập từ mọi thiết bị, đồng bộ dữ liệu real-time',
+            title: 'Connect Anytime, Anywhere',
+            description: 'Access from any device, real-time data synchronization',
             icon: '🌐',
         },
         {
-            title: 'Bảo mật tuyệt đối',
-            description: 'Mã hóa end-to-end, tuân thủ GDPR và các tiêu chuẩn quốc tế',
+            title: 'Absolute Security',
+            description: 'End-to-end encryption, GDPR compliant and international standards',
             icon: '🔒',
         },
         {
-            title: 'Tích hợp linh hoạt',
-            description: 'Kết nối với các công cụ yêu thích của bạn',
+            title: 'Flexible Integration',
+            description: 'Connect with your favorite tools',
             icon: '🔗',
         },
         {
-            title: 'Hỗ trợ 24/7',
-            description: 'Đội ngũ support luôn sẵn sàng hỗ trợ bạn',
+            title: '24/7 Support',
+            description: 'Support team always ready to help you',
             icon: '💬',
         },
         {
-            title: 'AI thông minh',
-            description: 'Trợ lý AI giúp gợi ý và tối ưu quy trình làm việc',
+            title: 'Smart AI',
+            description: 'AI assistant helps suggest and optimize workflows',
             icon: '🤖',
         },
         {
-            title: 'Miễn phí mãi mãi',
-            description: 'Gói cơ bản hoàn toàn miễn phí, nâng cấp khi cần',
+            title: 'Free Forever',
+            description: 'Basic plan completely free, upgrade when needed',
             icon: '🎁',
         },
     ];
@@ -58,10 +58,10 @@ const WhyChoose: React.FC = () => {
                     className="text-center mb-16"
                 >
                     <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Tại sao chọn Bizz-Connect?
+                        Why Choose Bizz-Connect?
                     </h2>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Những lý do khiến hàng ngàn doanh nghiệp tin tưởng chúng tôi
+                        Reasons why thousands of businesses trust us
                     </p>
                 </motion.div>
 
@@ -101,7 +101,7 @@ const WhyChoose: React.FC = () => {
                     transition={{ delay: 0.8, duration: 0.8 }}
                     className="mt-20 text-center"
                 >
-                    <p className="text-gray-500 mb-8">Được tin tưởng bởi các tổ chức hàng đầu</p>
+                    <p className="text-gray-500 mb-8">Trusted by leading organizations</p>
                     <div className="flex flex-wrap justify-center items-center gap-8 opacity-50">
                         {['🏢', '🏦', '🏭', '🏪', '🏛️'].map((icon, idx) => (
                             <div key={idx} className="text-6xl grayscale hover:grayscale-0 transition-all duration-300">

@@ -37,14 +37,14 @@ const CTA: React.FC = () => {
 
                     {/* Headline */}
                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                        Sẵn sàng thay đổi cách bạn
+                        Ready to transform the way you
                         <br />
-                        kết nối kinh doanh?
+                        connect your business?
                     </h2>
 
                     {/* Description */}
                     <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-                        Tham gia cùng hàng ngàn doanh nghiệp đang sử dụng Bizz-Connect để phát triển mạng lưới của họ
+                        Join thousands of businesses using Bizz-Connect to grow their network
                     </p>
 
                     {/* CTA Buttons */}
@@ -59,16 +59,16 @@ const CTA: React.FC = () => {
                             className="group px-8 py-4 bg-white text-purple-600 font-semibold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto"
                         >
                             <span className="flex items-center justify-center">
-                                Bắt đầu ngay - Miễn phí
+                                Get Started - Free
                                 <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                 </svg>
                             </span>
                         </button>
 
-                        <button className="px-8 py-4 bg-transparent text-white font-semibold rounded-xl border-2 border-white/50 hover:bg-white/10 hover:border-white transition-all duration-300 w-full sm:w-auto">
-                            Xem Demo
-                        </button>
+                        {/* <button className="px-8 py-4 bg-transparent text-white font-semibold rounded-xl border-2 border-white/50 hover:bg-white/10 hover:border-white transition-all duration-300 w-full sm:w-auto">
+                            View Demo
+                        </button> */}
                     </motion.div>
 
                     {/* Trust indicator */}
@@ -78,7 +78,7 @@ const CTA: React.FC = () => {
                         transition={{ delay: 0.6, duration: 0.8 }}
                         className="mt-8 text-white/80 text-sm"
                     >
-                        ✨ Không cần thẻ tín dụng • Hủy bất cứ lúc nào
+                        ✨ No credit card required • Cancel anytime
                     </motion.p>
                 </motion.div>
             </div>

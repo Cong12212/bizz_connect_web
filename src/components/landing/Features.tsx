@@ -18,26 +18,26 @@ const Features: React.FC = () => {
     const features: Feature[] = [
         {
             icon: '🤝',
-            title: 'Quản lý liên hệ thông minh',
-            description: 'Lưu trữ và quản lý thông tin khách hàng, đối tác một cách có tổ chức và hiệu quả',
+            title: 'Smart Contact Management',
+            description: 'Store and manage customer and partner information in an organized and efficient way',
             gradient: 'from-purple-500 to-pink-500',
         },
         {
             icon: '📇',
-            title: 'Business Card kỹ thuật số',
-            description: 'Tạo và chia sẻ danh thiếp điện tử chuyên nghiệp, dễ dàng kết nối',
+            title: 'Digital Business Card',
+            description: 'Create and share professional digital business cards, connect easily',
             gradient: 'from-blue-500 to-cyan-500',
         },
         {
             icon: '🔔',
-            title: 'Nhắc nhở tự động',
-            description: 'Không bỏ lỡ bất kỳ cuộc hẹn quan trọng nào với hệ thống reminder thông minh',
+            title: 'Automatic Reminders',
+            description: 'Never miss any important appointments with intelligent reminder system',
             gradient: 'from-green-500 to-emerald-500',
         },
         {
             icon: '📊',
-            title: 'Phân tích & Báo cáo',
-            description: 'Theo dõi hiệu suất và xu hướng kết nối với dashboard trực quan',
+            title: 'Analytics & Reports',
+            description: 'Track performance and connection trends with intuitive dashboard',
             gradient: 'from-orange-500 to-red-500',
         },
     ];
@@ -68,10 +68,10 @@ const Features: React.FC = () => {
                     className="text-center mb-16"
                 >
                     <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Tính năng nổi bật
+                        Featured Capabilities
                     </h2>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Tất cả những gì bạn cần để quản lý và phát triển mạng lưới kinh doanh
+                        Everything you need to manage and grow your business network
                     </p>
                 </motion.div>
 
@@ -107,7 +107,7 @@ const Features: React.FC = () => {
 
                             {/* Arrow indicator */}
                             <div className="mt-6 flex items-center text-purple-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <span className="text-sm">Tìm hiểu thêm</span>
+                                <span className="text-sm">Learn more</span>
                                 <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>

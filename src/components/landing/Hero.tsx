@@ -29,7 +29,7 @@ const Hero: React.FC = () => {
                         className="inline-flex items-center px-4 py-2 mb-8 text-sm font-medium text-purple-700 bg-purple-100 rounded-full"
                     >
                         <span className="mr-2">✨</span>
-                        Kết nối thông minh - Phát triển bền vững
+                        Smart Connection - Sustainable Growth
                     </motion.div>
 
                     {/* Headline */}
@@ -39,10 +39,10 @@ const Hero: React.FC = () => {
                         transition={{ delay: 0.3, duration: 0.8 }}
                         className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight"
                     >
-                        Kết nối doanh nghiệp
+                        Connect Your Business
                         <br />
                         <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                            trong tầm tay
+                            At Your Fingertips
                         </span>
                     </motion.h1>
 
@@ -53,8 +53,8 @@ const Hero: React.FC = () => {
                         transition={{ delay: 0.5, duration: 0.8 }}
                         className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed"
                     >
-                        Nền tảng quản lý quan hệ khách hàng thông minh,
-                        giúp doanh nghiệp kết nối và phát triển hiệu quả hơn
+                        Smart customer relationship management platform,
+                        helping businesses connect and grow more effectively
                     </motion.p>
 
                     {/* CTA Buttons */}
@@ -68,7 +68,7 @@ const Hero: React.FC = () => {
                             onClick={() => navigate('/auth')}
                             className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto"
                         >
-                            <span className="relative z-10">Bắt đầu miễn phí</span>
+                            <span className="relative z-10">Get Started Free</span>
                             <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-blue-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </button>
 
@@ -76,7 +76,7 @@ const Hero: React.FC = () => {
                             onClick={() => navigate('/auth')}
                             className="px-8 py-4 bg-white text-gray-800 font-semibold rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:text-purple-600 transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto"
                         >
-                            Đăng nhập
+                            Sign In
                         </button>
                     </motion.div>
 
@@ -85,20 +85,18 @@ const Hero: React.FC = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.9, duration: 0.8 }}
-                        className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
+                        className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto mb-20"
                     >
-                        {[
+                        {/*
+                            { number: '10K+', label: 'Businesses' },
+                            { number: '50K+', label: 'Users' },
+                            { number: '99%', label: 'Satisfaction' },
+                        */}
+                        {/*
                             { number: '10K+', label: 'Doanh nghiệp' },
                             { number: '50K+', label: 'Người dùng' },
                             { number: '99%', label: 'Hài lòng' },
-                        ].map((stat, idx) => (
-                            <div key={idx} className="text-center">
-                                <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-                                    {stat.number}
-                                </div>
-                                <div className="text-sm md:text-base text-gray-600">{stat.label}</div>
-                            </div>
-                        ))}
+                        */}
                     </motion.div>
                 </motion.div>
 
@@ -110,7 +108,6 @@ const Hero: React.FC = () => {
                     className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
                 >
                     <div className="flex flex-col items-center gap-2 text-gray-400">
-                        <span className="text-sm">Cuộn xuống</span>
                         <div className="w-6 h-10 border-2 border-gray-300 rounded-full flex justify-center">
                             <div className="w-1 h-3 bg-gray-400 rounded-full mt-2 animate-bounce"></div>
                         </div>
