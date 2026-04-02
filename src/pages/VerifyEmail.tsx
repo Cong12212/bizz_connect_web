@@ -10,6 +10,7 @@ export default function VerifyEmail() {
     const { token, user } = useAppSelector((s) => s.auth);
     const [msg, setMsg] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
 
     // Nếu đã verify rồi thì vào dashboard
     useEffect(() => {
@@ -25,6 +26,13 @@ export default function VerifyEmail() {
         try {
             await dispatch(resendVerifyThunk()).unwrap();
             setMsg("Verification email sent.");
+            setCooldown(60);
+            const timer = setInterval(() => {
+                setCooldown((c) => {
+                    if (c <= 1) { clearInterval(timer); return 0; }
+                    return c - 1;
+                });
+            }, 1000);
         } catch {
             setMsg("Failed to resend. Try later.");
         } finally {
@@ -79,9 +87,9 @@ export default function VerifyEmail() {
                     <button
                         onClick={onResend}
                         className="w-full rounded-xl bg-white border border-slate-200 py-3 font-semibold disabled:opacity-70"
-                        disabled={busy}
+                        disabled={busy || cooldown > 0}
                     >
-                        Resend email
+                        {cooldown > 0 ? `Resend email (${cooldown}s)` : "Resend email"}
                     </button>
 
                     <button
