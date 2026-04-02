@@ -67,7 +67,7 @@ export default function VerifyEmail() {
                 </p>
 
                 <div className="space-y-3">
-                    <a href="mailto:">
+                    <a href="mailto:" className="block">
                         <button
                             className="w-full rounded-xl bg-slate-900 text-white font-semibold py-3 disabled:opacity-70"
                             disabled={busy}
