@@ -5,7 +5,7 @@ import VerifiedRoute from './components/VerifiedRoute';
 import GuestRoute from './components/GuestRoute';
 import HomePage from './pages/Dashboard';
 import VerifySuccess from './pages/VerifySuccess';
-import ForgotPassword from './pages/ForgotPassword';
+// import ForgotPassword from './pages/ForgotPassword';
 import ResetVerify from './pages/ResetVerify';
 import ContactsPage from './pages/Contacts';
 import TagsPage from './pages/Tags';
@@ -26,7 +26,7 @@ export default function App() {
 
       {/* Chỉ KHÁCH (không token) */}
       <Route path="/auth" element={<GuestRoute><Auth /></GuestRoute>} />
-      <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+      {/* <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} /> */}
 
       {/* Chỉ người CÓ token nhưng CHƯA verified */}
       <Route path="/verify-email" element={<VerifyOnlyRoute><VerifyEmail /></VerifyOnlyRoute>} />

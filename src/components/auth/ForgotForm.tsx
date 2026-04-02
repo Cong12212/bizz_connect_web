@@ -34,7 +34,20 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
             setMsg("Verification code sent to your email.");
             setStep(2);
         } catch (e: any) {
-            const msg = e?.response?.data?.message || e?.message || "Failed to send code.";
+            // Extract error message from backend response - handle Laravel validation errors
+            let msg = "Failed to send code.";
+            if (e?.response?.data?.errors) {
+                // Handle Laravel validation errors - get first error message
+                const errors = e.response.data.errors;
+                const firstError = Object.values(errors)[0];
+                if (Array.isArray(firstError) && firstError.length > 0) {
+                    msg = firstError[0] as string;
+                }
+            } else if (e?.response?.data?.message) {
+                msg = e.response.data.message;
+            } else if (e?.message) {
+                msg = e.message;
+            }
             setErr(msg);
         } finally {
             setBusy(false);
@@ -55,7 +68,20 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
             setMsg("Password updated. Redirecting to sign in…");
             setTimeout(onBack, 1200);
         } catch (e: any) {
-            const msg = e?.response?.data?.message || e?.message || "Failed to reset password.";
+            // Extract error message from backend response - handle Laravel validation errors
+            let msg = "Failed to reset password.";
+            if (e?.response?.data?.errors) {
+                // Handle Laravel validation errors - get first error message
+                const errors = e.response.data.errors;
+                const firstError = Object.values(errors)[0];
+                if (Array.isArray(firstError) && firstError.length > 0) {
+                    msg = firstError[0] as string;
+                }
+            } else if (e?.response?.data?.message) {
+                msg = e.response.data.message;
+            } else if (e?.message) {
+                msg = e.message;
+            }
             setErr(msg);
         } finally {
             setBusy(false);
@@ -221,7 +247,19 @@ export default function ForgotForm({ onBack }: { onBack: () => void }) {
                                     await resendPasswordCode(email.trim());
                                     setMsg("Code resent.");
                                 } catch (e: any) {
-                                    const msg = e?.response?.data?.message || e?.message || "Cannot resend code.";
+                                    // Extract error message from backend response
+                                    let msg = "Cannot resend code.";
+                                    if (e?.response?.data?.errors) {
+                                        const errors = e.response.data.errors;
+                                        const firstError = Object.values(errors)[0];
+                                        if (Array.isArray(firstError) && firstError.length > 0) {
+                                            msg = firstError[0] as string;
+                                        }
+                                    } else if (e?.response?.data?.message) {
+                                        msg = e.response.data.message;
+                                    } else if (e?.message) {
+                                        msg = e.message;
+                                    }
                                     setErr(msg);
                                 }
                             }}

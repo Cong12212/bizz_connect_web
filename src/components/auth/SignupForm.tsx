@@ -44,8 +44,20 @@ export default function SignupForm({ onSuccessRoute }: { onSuccessRoute: string 
             await dispatch(registerThunk({ name: name.trim(), email: email.trim(), password: pw })).unwrap();
             nav(onSuccessRoute, { replace: true });
         } catch (e: any) {
-            // Extract error message from backend response
-            const msg = e?.response?.data?.message || e?.message || "Register failed";
+            // Extract error message from backend response - handle Laravel validation errors
+            let msg = "Register failed";
+            if (e?.response?.data?.errors) {
+                // Handle Laravel validation errors - get first error message
+                const errors = e.response.data.errors;
+                const firstError = Object.values(errors)[0];
+                if (Array.isArray(firstError) && firstError.length > 0) {
+                    msg = firstError[0] as string;
+                }
+            } else if (e?.response?.data?.message) {
+                msg = e.response.data.message;
+            } else if (e?.message) {
+                msg = e.message;
+            }
             setErr(msg);
         } finally {
             setSubmitting(false);
