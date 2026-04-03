@@ -12,12 +12,12 @@ export default function VerifyEmail() {
     const [busy, setBusy] = useState(false);
     const [cooldown, setCooldown] = useState(0);
 
-    // Nếu đã verify rồi thì vào dashboard
+    // Redirect to dashboard if already verified
     useEffect(() => {
         if (user?.email_verified_at) navigate("/dashboard", { replace: true });
     }, [user, navigate]);
 
-    // Không có token -> về Auth
+    // No token → redirect to auth
     if (!token) return <Navigate to="/Auth" replace />;
 
     const onResend = async () => {
@@ -49,7 +49,7 @@ export default function VerifyEmail() {
                 navigate("/dashboard", { replace: true });
                 return;
             }
-            setMsg("Email chưa được xác minh — vui lòng kiểm tra hộp thư.");
+            setMsg("Email not yet verified — please check your inbox.");
         } finally {
             setBusy(false);
         }

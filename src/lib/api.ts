@@ -1,7 +1,7 @@
 // src/lib/api.ts
 import { assertApiUrl } from "./config";
 
-/** Gọi API trả JSON/text (tự ghép API_BASE, tự gắn Bearer token nếu có) */
+/** Fetch JSON/text from the API (prepends API_BASE, injects Bearer token if available) */
 export async function apiFetch<T>(
     path: string,
     init?: RequestInit,
@@ -17,7 +17,7 @@ export async function apiFetch<T>(
         ...(init?.headers as any),
     };
 
-    // Nếu body là FormData thì KHÔNG set Content-Type
+    // Skip Content-Type for FormData — browser sets it with the correct boundary
     const isFD = typeof FormData !== "undefined" && init?.body instanceof FormData;
     if (!isFD && init?.body && !headers["Content-Type"]) {
         headers["Content-Type"] = "application/json";
@@ -49,7 +49,7 @@ export async function apiFetch<T>(
     return (hasBody ? (isJson ? await res.json() : await res.text()) : undefined) as T;
 }
 
-/** Gọi API lấy file (xlsx/csv/pdf/ảnh...), trả Blob */
+/** Fetch a file from the API (xlsx/csv/pdf/image...), returns a Blob */
 export async function apiFetchBlob(
     path: string,
     init?: RequestInit,
@@ -61,7 +61,7 @@ export async function apiFetchBlob(
         (typeof window !== "undefined" ? localStorage.getItem("bc_token") || "" : "");
 
     const headers: Record<string, string> = {
-        // Accept rộng để nhận được excel/csv
+        // Broad Accept header to handle excel/csv responses
         Accept:
             "application/octet-stream,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,*/*",
         ...(init?.headers as any),

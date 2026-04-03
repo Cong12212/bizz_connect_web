@@ -21,7 +21,7 @@ export default function ReminderFormModal({
     onClose: () => void;
     token: string;
     mode: 'create' | 'edit';
-    row?: Reminder;        // có thể chỉ cần id + vài field
+    row?: Reminder;
     onSaved: (r: Reminder) => void;
 }) {
     const toast = useToast();
@@ -41,7 +41,7 @@ export default function ReminderFormModal({
     const [status, setStatus] = useState<ReminderStatus>(row?.status ?? 'pending');
     const [channel, setChannel] = useState<ReminderChannel>('app');
 
-    // ===== Prefetch FULL reminder khi edit (chỉ 1 lần mỗi khi mở) =====
+    // Prefetch full reminder data when editing (runs once per open)
     useEffect(() => {
         if (!open) return;
         if (mode === 'create') {
@@ -71,14 +71,14 @@ export default function ReminderFormModal({
                 setReady(true);
             } catch (e: any) {
                 toast.error(e?.message || 'Failed to load reminder');
-                onClose(); // đóng nếu lỗi load
+                onClose();
             }
         })();
         return () => { alive = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, mode, row?.id, token]);
 
-    // Fetch preview để hiển thị chip — chỉ chạy khi đã ready & có contactIds
+    // Fetch contact previews for chips — only runs when ready and contactIds change
     useEffect(() => {
         if (!ready || !open) return;
         const need = contactIds.filter((id) => !previewMap[id]);
@@ -111,7 +111,7 @@ export default function ReminderFormModal({
 
         const [, year, month, day, hour, minute] = match;
 
-        // ✅ Trả về format chính xác, không có giây
+        // Returns format without seconds
         return `${year}-${month}-${day}T${hour}:${minute}`;
     }
     function localInputToUTC(local: string) {
@@ -141,9 +141,7 @@ export default function ReminderFormModal({
                     ? await updateReminder(row.id, payload, token)
                     : await createReminder(payload, token);
 
-            // đảm bảo trả về full (nếu API chưa trả đủ)
-            const full = await getReminder(saved.id, token);
-            onSaved(full);
+            onSaved(saved);
             toast.success(mode === 'edit' ? 'Reminder updated' : 'Reminder created');
         } catch (e: any) {
             toast.error(e?.message || 'Save failed');
@@ -187,7 +185,7 @@ export default function ReminderFormModal({
                                                 key={id}
                                                 className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs ${isPrimary ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50'}`}
                                             >
-                                                <span className="max-w-[240px] truncate">
+                                                <span className="max-w-60 truncate">
                                                     {c ? `${c.name}${c.company ? ' · ' + c.company : ''}` : `#${id}`}
                                                 </span>
                                                 {!isPrimary && (
@@ -227,12 +225,9 @@ export default function ReminderFormModal({
                                     <input
                                         type="datetime-local"
                                         value={dueLocal}
-                                        onChange={(e) => {
-                                            console.log('Input changed to:', e.target.value);
-                                            setDueLocal(e.target.value);
-                                        }}
+                                        onChange={(e) => setDueLocal(e.target.value)}
                                         className="w-full rounded-md border px-3 py-2"
-                                        step="60" // ✅ Thêm step để chỉ chọn phút, không có giây
+                                        step="60"
                                     />
                                 </label>
                                 <label className="block">

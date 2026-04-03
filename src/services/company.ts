@@ -39,7 +39,7 @@ export interface CompanyFormData {
     description?: string;
     logo?: File;
 
-    // gửi code để BE map sang address_id
+    // send codes so the BE can resolve to address_id
     address_detail?: string;
     city?: string;    // code
     state?: string;   // code

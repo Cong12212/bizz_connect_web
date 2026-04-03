@@ -10,9 +10,10 @@ import {
     createTag,
     renameTag,
     deleteTagApi,
+    attachContactsToTag,
+    detachContactsFromTag,
     type Tag,
 } from '../services/tags';
-import { attachTags, detachTag } from '../services/contacts';
 import SelectContactsModal from '../components/contacts/SelectContactsModal';
 import { useToast, Spinner } from '../components/ui/Toast';
 import {
@@ -88,13 +89,11 @@ export default function TagsPage() {
         [removeModal]
     );
 
-    function bumpTagCount(tagId: number, delta: number) {
+    function syncTagCount(tagId: number, contacts_count: number) {
         setData((d) => ({
             ...d,
             items: d.items.map((t) =>
-                t.id === tagId
-                    ? { ...t, contacts_count: Math.max(0, (t.contacts_count || 0) + delta) }
-                    : t
+                t.id === tagId ? { ...t, contacts_count } : t
             ),
         }));
     }
@@ -310,26 +309,32 @@ export default function TagsPage() {
                     title={`Contacts with #${activeRemoveTag.name}`}
                     confirmLabel="Remove tag from selected"
                     onConfirm={async (ids) => {
-                        await Promise.all(ids.map((id) => detachTag(id, activeRemoveTag.id, token)));
-                        bumpTagCount(activeRemoveTag.id, -ids.length);
+                        const updated = await detachContactsFromTag(activeRemoveTag.id, ids, token);
+                        syncTagCount(activeRemoveTag.id, updated.contacts_count ?? 0);
                         setModalReloadKey((k) => k + 1);
-                        setReloadKey((k) => k + 1);
                         toast.success('Tag removed from selected contacts.');
                     }}
                     allowToggleWithWithout
                     focusTag={activeRemoveTag}
                     onAddToFocusTag={async (ids, tag) => {
-                        await Promise.all(ids.map((id) => attachTags(id, { names: [tag.name] }, token)));
-                        bumpTagCount(tag.id, +ids.length);
+                        const updated = await attachContactsToTag(tag.id, ids, token);
+                        syncTagCount(tag.id, updated.contacts_count ?? 0);
                         setModalReloadKey((k) => k + 1);
-                        setReloadKey((k) => k + 1);
                         toast.success('Tag added to selected contacts.');
                     }}
                     canAddTags
                     onAddTags={async (ids, names) => {
-                        await Promise.all(ids.map((id) => attachTags(id, { names }, token)));
+                        // Attach each named tag to contacts in bulk (still need per-tag calls, but 1 call per tag not per contact)
+                        await Promise.all(
+                            names.map(async (name) => {
+                                const tag = data.items.find((t) => t.name === name);
+                                if (tag) {
+                                    const updated = await attachContactsToTag(tag.id, ids, token);
+                                    syncTagCount(tag.id, updated.contacts_count ?? 0);
+                                }
+                            })
+                        );
                         setModalReloadKey((k) => k + 1);
-                        setReloadKey((k) => k + 1);
                         toast.success('Tags added.');
                     }}
                     refreshKey={modalReloadKey}

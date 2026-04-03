@@ -56,8 +56,7 @@ export default function PublicBusinessCardPage() {
             website_url: card!.website || "",
             source: "business_card",
 
-            // ⬇️ patch address vào state để form nhận
-            address_detail: card?.address?.address_detail || "",     // hoặc card?.address_text nếu BE trả free-text
+            address_detail: card?.address?.address_detail || "",
             country: card?.address?.country?.code || "",
             state: card?.address?.state?.code || "",
             city: card?.address?.city?.code || "",

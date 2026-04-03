@@ -24,11 +24,11 @@ export default function App() {
       {/* Public routes */}
       <Route path="/card/:slug" element={<PublicBusinessCardPage />} />
 
-      {/* Chỉ KHÁCH (không token) */}
+      {/* Guest only (no token) */}
       <Route path="/auth" element={<GuestRoute><Auth /></GuestRoute>} />
       {/* <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} /> */}
 
-      {/* Chỉ người CÓ token nhưng CHƯA verified */}
+      {/* Token present but not yet verified */}
       <Route path="/verify-email" element={<VerifyOnlyRoute><VerifyEmail /></VerifyOnlyRoute>} />
       <Route path="/verify-success" element={<VerifyOnlyRoute><VerifySuccess /></VerifyOnlyRoute>} />
       <Route path="/reset-verify" element={<VerifyOnlyRoute><ResetVerify /></VerifyOnlyRoute>} />

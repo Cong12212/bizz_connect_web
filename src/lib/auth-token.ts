@@ -1,6 +1,6 @@
 export function getToken(): string {
     if (typeof window === "undefined") return "";
-    // nhận nhiều key cho linh hoạt
+    // check multiple keys for flexibility
     const keys = ["auth_token", "token", "access_token", "jwt", "bearer"];
     for (const k of keys) {
         const v = localStorage.getItem(k);

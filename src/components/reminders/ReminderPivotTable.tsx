@@ -17,7 +17,7 @@ export default function ReminderPivotTable({
     onDetach: (edge: ReminderEdge) => void;
     onDeleteReminder: (reminderId: number) => void;
 }) {
-    // ✅ Hàm format UTC không convert timezone
+    // Format UTC datetime string without timezone conversion
     function formatUTCAsIs(isoString: string): string {
         const match = String(isoString).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
         if (!match) return String(isoString);
@@ -65,7 +65,6 @@ export default function ReminderPivotTable({
                             <div className="truncate text-sm">
                                 {e.contact_name}{e.contact_company ? ` · ${e.contact_company}` : ''}
                             </div>
-                            {/* ✅ Sửa dòng này */}
                             <div className="truncate text-sm">
                                 {e.due_at ? formatUTCAsIs(e.due_at) : '—'}
                             </div>

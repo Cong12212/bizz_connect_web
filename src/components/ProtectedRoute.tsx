@@ -20,7 +20,7 @@ export default function ProtectedRoute() {
     const { token, user, status } = useAppSelector((s) => s.auth);
     const bootedRef = useRef(false);
 
-    // Lấy token từ localStorage nếu Redux chưa có
+    // Sync token from localStorage into Redux if not yet set
     useEffect(() => {
         if (!token && typeof window !== 'undefined') {
             const saved = localStorage.getItem('bc_token');
@@ -34,7 +34,7 @@ export default function ProtectedRoute() {
         }
     }, [token, dispatch]);
 
-    // Khi có token mà chưa có user --> gọi /auth/me đúng 1 lần
+    // Fetch current user exactly once when token is present but user is not loaded
     useEffect(() => {
         if (!bootedRef.current && (token || (typeof window !== 'undefined' && localStorage.getItem('bc_token')))) {
             if (!user && status !== 'loading') {
@@ -46,12 +46,12 @@ export default function ProtectedRoute() {
 
     const hasToken = !!(token || (typeof window !== 'undefined' && localStorage.getItem('bc_token')));
 
-    // Không có token => về /auth
+    // No token → redirect to /auth
     if (!hasToken) return <Navigate to="/auth" replace state={{ from: loc }} />;
 
-    // Có token nhưng đang đồng bộ /auth/me
+    // Token present but still syncing /auth/me
     if (!user && status === 'loading') return <Loader />;
 
-    // Có token + user => cho qua
+    // Token and user loaded → allow access
     return <Outlet />;
 }

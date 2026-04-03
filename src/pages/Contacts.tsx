@@ -49,7 +49,7 @@ export default function ContactsPage() {
     const selectedId = routeId;
     const [selected, setSelected] = useState<Contact | null>(null);
 
-    // TÁCH đối tượng đang chỉnh: null => tạo mới; object => sửa
+    // null = creating new contact; object = editing existing
     const [editTarget, setEditTarget] = useState<Contact | null>(null);
 
     const isMobile = useMediaQuery("(max-width: 767.98px)");
@@ -168,7 +168,7 @@ export default function ContactsPage() {
 
                     <button
                         onClick={() => {
-                            setEditTarget(null);   // ➜ tạo mới
+                            setEditTarget(null);   // create new
                             setOpenEdit(true);
                         }}
                         className="ml-auto rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800"

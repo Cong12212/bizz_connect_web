@@ -9,7 +9,7 @@ export default function TagEditModal({
     open: boolean;
     onClose: () => void;
     token: string;
-    tag?: Tag | null;         // nếu có => rename, nếu null => create
+    tag?: Tag | null;         // if provided → rename mode; if null → create mode
     onSaved: (t: Tag) => void;
 }) {
     const [name, setName] = useState(tag?.name || '');

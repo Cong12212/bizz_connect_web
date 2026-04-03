@@ -33,7 +33,7 @@ export default function EditContactSheet({
                 country: contact.address?.country?.code || "",
             });
         } else {
-            // ⬇️ nếu tạo mới, dùng prefill từ navigate state (nếu có)
+            // Creating new contact — pre-fill from navigation state if provided
             setForm({
                 ...(initialForm || {}),
                 address_detail: initialForm?.address_detail ?? "",
@@ -42,7 +42,8 @@ export default function EditContactSheet({
                 city: initialForm?.city ?? "",
             });
         }
-    }, [contact, open, initialForm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contact?.id, open]);
 
     const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
@@ -147,7 +148,7 @@ export default function EditContactSheet({
                                 label="Street Address"
                                 value={form.address_detail || ''}
                                 onChange={(v) => set('address_detail', v)}
-                                placeholder="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1"
+                                placeholder="123 Main St, Suite 4"
                                 disabled={saving}
                             />
                             <div className="grid grid-cols-3 gap-3">

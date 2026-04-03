@@ -25,15 +25,15 @@ export default function VerifiedRoute({ children }: { children?: React.ReactNode
         }
     }, [token, verified, dispatch]);
 
-    // 1) KHÔNG token -> về /auth
+    // 1) No token → redirect to /auth
     if (!token) return <Navigate to="/auth" replace />;
 
-    // đang load trạng thái
+    // Loading auth state
     if (verified === null || status === 'loading') return <MiniLoader />;
 
-    // 2) Có token nhưng CHƯA verified -> về /verify-email
+    // 2) Token present but not verified → redirect to /verify-email
     if (!verified) return <Navigate to="/verify-email" replace />;
 
-    // 3) Có token & verified -> cho vào app
+    // 3) Token present and verified → allow access
     return <>{children}</>;
 }

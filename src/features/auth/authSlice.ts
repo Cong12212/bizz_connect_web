@@ -116,12 +116,12 @@ const authSlice = createSlice({
             state.user = null;
             state.verified = null;
             if (typeof window !== "undefined") localStorage.removeItem("bc_token");
-            // Không cần touch api.defaults vì interceptor sẽ thấy localStorage rỗng và tự bỏ header
+            // No need to touch api.defaults — the interceptor will see an empty localStorage and drop the header
         },
         setToken(state, action: PayloadAction<string>) {
             state.token = action.payload;
             if (typeof window !== "undefined") localStorage.setItem("bc_token", action.payload);
-            // header sẽ được interceptor thêm tự động
+            // header will be injected automatically by the interceptor
         },
         setUser(state, action: PayloadAction<User | null>) {
             state.user = action.payload;

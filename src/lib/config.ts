@@ -1,11 +1,11 @@
 // src/lib/config.ts
 let _API_URL: string | null = null;
 
-/** Lấy API base URL (đa nền tảng + cache) */
+/** Resolve and cache the API base URL across platforms */
 export function pickApiBaseUrl(): string {
     if (_API_URL !== null) return _API_URL;
 
-    // Vite: phải truy cập tĩnh để bundler inline biến
+    // Vite: must access statically so the bundler can inline the variable
     let fromVite = '';
     try {
         fromVite =

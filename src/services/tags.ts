@@ -38,3 +38,17 @@ export async function renameTag(id: number, name: string, token?: string) {
 export async function deleteTagApi(id: number, token?: string) {
     await apiFetch<void>(`/tags/${id}`, { method: "DELETE" }, token);
 }
+
+export async function attachContactsToTag(tagId: number, contactIds: number[], token?: string) {
+    return apiFetch<Tag>(`/tags/${tagId}/contacts`, {
+        method: "POST",
+        body: JSON.stringify({ contact_ids: contactIds }),
+    }, token);
+}
+
+export async function detachContactsFromTag(tagId: number, contactIds: number[], token?: string) {
+    return apiFetch<Tag>(`/tags/${tagId}/contacts`, {
+        method: "DELETE",
+        body: JSON.stringify({ contact_ids: contactIds }),
+    }, token);
+}

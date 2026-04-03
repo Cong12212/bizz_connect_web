@@ -27,9 +27,8 @@ export type Paginated<T> = {
 };
 
 export type ReminderCreateInput = {
-    // NEW: nhiều contact
     contact_ids?: number[];
-    contact_id?: number;                 // primary (phần tử đầu của contact_ids)
+    contact_id?: number;                 // primary contact (first element of contact_ids)
     title: string;
     note?: string | null;
     due_at: string | Date | null;
@@ -39,7 +38,6 @@ export type ReminderCreateInput = {
 };
 
 export type ReminderUpdateInput = {
-    // NEW: thay toàn bộ ds contact / đổi primary
     contact_ids?: number[];
     contact_id?: number;
     title?: string;
@@ -157,7 +155,7 @@ export async function listReminderEdges(
     return apiFetch<Paginated<ReminderEdge>>(`/reminders/pivot?${p.toString()}`, undefined, token);
 }
 
-// detach 1 edge (xoá quan hệ contact↔reminder, KHÔNG xoá reminder)
+// detach one edge (removes the contact↔reminder relationship, does NOT delete the reminder)
 export async function detachReminderContact(reminderId: number, contactId: number, token?: string) {
     return apiFetch<void>(`/reminders/${reminderId}/contacts/${contactId}`, { method: "DELETE" }, token);
 }

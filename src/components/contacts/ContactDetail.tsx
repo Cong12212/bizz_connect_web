@@ -8,16 +8,16 @@ export default function ContactDetail({
     onEdit: () => void;
     onUpdated: (c: Contact) => void;
 }) {
-    // Helper để format address từ nested object
+    // Format address from nested object
     const formatAddress = (contact: Contact) => {
         if (!contact.address) return null;
 
-        // Ưu tiên dùng full_address nếu có (từ backend)
+        // Prefer full_address from the backend if available
         if (contact.address.full_address) {
             return contact.address.full_address;
         }
 
-        // Fallback: tự build từ các field
+        // Fallback: build from individual fields
         const parts = [
             contact.address.address_detail,
             contact.address.city?.name,

@@ -25,15 +25,13 @@ export default function GuestRoute({ children }: { children?: React.ReactNode })
         }
     }, [token, verified, dispatch]);
 
-    // 1) KHÔNG token -> cho vào trang khách
+    // 1) No token → allow guest access
     if (!token) return <>{children}</>;
 
-    // đang load trạng thái
+    // Loading auth state
     if (verified === null || status === 'loading') return <MiniLoader />;
 
-    // Có token:
-    // - verified -> đá sang app
+    // Has token: redirect based on verification status
     if (verified) return <Navigate to="/dashboard" replace />;
-    // - chưa verified -> đá sang verify
     return <Navigate to="/verify-email" replace />;
 }

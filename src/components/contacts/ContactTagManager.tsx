@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { attachTags, detachTag, type Contact } from '../../services/contacts';
 import { listTags, type Tag } from '../../services/tags';
+import useDebounced from '../../hooks/useDebounced';
 
 type Props = {
     contact: Contact;
@@ -14,6 +15,7 @@ type Props = {
 export default function ContactTagManager({ contact, token, onUpdated }: Props) {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState('');
+    const qDebounced = useDebounced(q, 300);
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState<string | null>(null);
     const [options, setOptions] = useState<Tag[]>([]);
@@ -36,23 +38,20 @@ export default function ContactTagManager({ contact, token, onUpdated }: Props) 
         return () => document.removeEventListener('mousedown', onDoc);
     }, [open]);
 
-    // search tags
+    // search tags — debounced to avoid a request on every keystroke
     useEffect(() => {
         let active = true;
         (async () => {
             try {
-                const query = q.trim();
-                const res = await listTags({ q: query || undefined }, token);
+                const res = await listTags({ q: qDebounced.trim() || undefined }, token);
                 if (!active) return;
                 setOptions(res.data);
             } catch {
                 // ignore
             }
         })();
-        return () => {
-            active = false;
-        };
-    }, [q, token]);
+        return () => { active = false; };
+    }, [qDebounced, token]);
 
     async function addById(id: number) {
         if (currentIds.has(id)) return;

@@ -171,7 +171,7 @@ export default function CompanySettings() {
                                 value={formData.address_detail || ""}
                                 onChange={(e) => setFormData({ ...formData, address_detail: e.target.value })}
                                 className="w-full rounded-md border px-3 py-2"
-                                placeholder="123 Nguyễn Huệ"
+                                placeholder="123 Main St"
                             />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

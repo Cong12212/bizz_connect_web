@@ -16,8 +16,8 @@ export type Notification = {
     updated_at: string;
 };
 
-export async function listNotifications(scope: 'all' | 'unread' | 'upcoming' | 'past' = 'all', limit = 20, token?: string) {
-    const p = new URLSearchParams({ scope, limit: String(limit) });
+export async function listNotifications(scope: 'all' | 'unread' | 'upcoming' | 'past' = 'all', perPage = 20, token?: string) {
+    const p = new URLSearchParams({ scope, per_page: String(perPage) });
     return apiFetch<{ data: Notification[] }>(`/notifications?${p.toString()}`, undefined, token);
 }
 

@@ -96,8 +96,8 @@ export default function Dashboard() {
         // Count new tags this month
         const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
         const newTagsThisMonth = tags.filter(t => {
-            // Nếu backend không trả created_at, dùng mockdata
-            return true; // Giả định tất cả tags đều "new" nếu không có timestamp
+            // backend does not return created_at for tags yet — treat all as new
+            return true;
         }).length;
 
         return {
@@ -398,7 +398,7 @@ export default function Dashboard() {
                     </button>
                 </div>
 
-                {/* Lưới 2 cột: trái Recent Activity, phải Quick Actions */}
+                {/* 2-column grid: left = Recent Activity, right = Quick Actions */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                     {/* LEFT - Recent Activity - DATA FROM API */}
                     <div className="lg:col-span-7">
@@ -459,7 +459,7 @@ export default function Dashboard() {
 
                     {/* RIGHT - Quick Actions & Upcoming */}
                     <div className="lg:col-span-5">
-                        {/* Quick Actions - CÓ CHỨC NĂNG */}
+                        {/* Quick Actions */}
                         <div className="mb-6">
                             <h2 className="text-base font-semibold mb-3">Quick Actions</h2>
                             <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">

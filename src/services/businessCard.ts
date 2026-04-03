@@ -84,7 +84,7 @@ export interface PublicBusinessCard {
 
 export async function getBusinessCard(): Promise<BusinessCard | null> {
     const res = await api.get<BusinessCard>("/business-card");
-    // Nếu API trả về null hoặc empty object
+    // Return null if the API returns null or an empty object
     if (!res.data || (typeof res.data === 'object' && Object.keys(res.data).length === 0)) {
         return null;
     }

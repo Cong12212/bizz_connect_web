@@ -53,7 +53,7 @@ export default function ReminderTable({
                         onChange={(e) => onToggleAll(e.target.checked)}
                     />
                 </div>
-                <div>Title dmmm</div>
+                <div>Title</div>
                 <div>Contact</div>
                 <div>Due at</div>
                 <div>Status</div>
@@ -83,28 +83,13 @@ export default function ReminderTable({
                             </div>
                             <div className="truncate text-sm">{contactLabel(r.contact_id)}</div>
                             <div className="min-w-0">
-                                {r.due_at ? (() => {
-                                    // Debug: Log ra xem due_at là gì
-                                    console.log('Original due_at:', r.due_at);
-                                    console.log('Type:', typeof r.due_at);
-
-                                    const match = String(r.due_at).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
-                                    console.log('Match result:', match);
-
-                                    if (!match) return String(r.due_at);
-
-                                    const [, year, month, day, hour, minute] = match;
-                                    const formatted = `${day}/${month}/${year}, ${hour}:${minute}`;
-                                    console.log('Formatted:', formatted);
-
-                                    return (
-                                        <div className="truncate">
-                                            <div className="text-sm font-medium">
-                                                {formatted}
-                                            </div>
+                                {r.due_at ? (
+                                    <div className="truncate">
+                                        <div className="text-sm font-medium">
+                                            {formatUTCAsIs(r.due_at)}
                                         </div>
-                                    );
-                                })() : '—'}
+                                    </div>
+                                ) : '—'}
                             </div>
                             <div className="text-xs">
                                 <span

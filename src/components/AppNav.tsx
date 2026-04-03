@@ -5,7 +5,7 @@ import React from "react";
 
 type Props = {
     variant: "sidebar" | "mobile";
-    onOpenSettings?: () => void;           // ⬅️ đổi tên prop
+    onOpenSettings?: () => void;
     className?: string;
 };
 
@@ -15,7 +15,7 @@ type LinkItem = {
     Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
-// KHÔNG có Settings trong links nữa (vì là button riêng)
+// Settings is rendered as a separate button, not a nav link
 const links: LinkItem[] = [
     { to: "/dashboard", label: "Home", Icon: HomeIcon },
     { to: "/contacts", label: "Contacts", Icon: Users },
