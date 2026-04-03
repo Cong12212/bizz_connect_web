@@ -68,9 +68,13 @@ export default function ContactsPage() {
             .then((res) => {
                 if (!active) return;
                 setData({ items: res.data, total: res.total, last: res.last_page });
+                setLoading(false);
             })
-            .catch((e) => setError(e?.message || "Failed to load"))
-            .finally(() => setLoading(false));
+            .catch((e) => {
+                if (!active) return;
+                setError(e?.message || "Failed to load");
+                setLoading(false);
+            });
         return () => {
             active = false;
         };
@@ -192,12 +196,20 @@ export default function ContactsPage() {
                             loading={loading}
                             onPage={setPage}
                             selectedId={selectedId}
-                            onSelect={(id) => nav(`/contacts/${id}`)}        // dùng router
+                            onSelect={(id) => nav(`/contacts/${id}`)}
                             onDelete={async (id) => {
                                 if (!confirm("Delete this contact?")) return;
                                 await deleteContact(id, token);
                                 setData((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
                                 if (selectedId === id) nav("/contacts");
+                            }}
+                            token={token}
+                            onUpdated={(c) => {
+                                setData((d) => ({
+                                    ...d,
+                                    items: d.items.map((x) => (x.id === c.id ? c : x)),
+                                }));
+                                if (selected?.id === c.id) setSelected(c);
                             }}
                         />
                     </section>

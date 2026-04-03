@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     listContacts,
     type Contact,
@@ -68,6 +68,7 @@ export default function SelectContactsModal({
     const [selected, setSelected] = useState<Set<number>>(new Set());
     const [viewWithout, setViewWithout] = useState(false);
     const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+    const fetchSeq = useRef(0);
 
     // Auto-hide notice after 2.2s
     useEffect(() => {
@@ -109,6 +110,7 @@ export default function SelectContactsModal({
     // Fetch contact list
     async function fetchList() {
         if (!open) return;
+        const currentSeq = ++fetchSeq.current;
         setLoading(true);
         setErr(null);
 
@@ -138,14 +140,18 @@ export default function SelectContactsModal({
                 res = await listContacts({ ...base, ...filters }, token);
             }
 
+            if (currentSeq !== fetchSeq.current) return;
+
             setData({
                 items: res.data || [],
                 total: res.total ?? 0,
                 last: res.last_page ?? 1,
             });
         } catch (e: any) {
+            if (currentSeq !== fetchSeq.current) return;
             setErr(e?.message || 'Failed to load');
         } finally {
+            if (currentSeq !== fetchSeq.current) return;
             setLoading(false);
         }
     }
