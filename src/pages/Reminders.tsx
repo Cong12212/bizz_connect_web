@@ -216,9 +216,13 @@ export default function RemindersPage() {
                 if (!alive) return;
                 setEdges(res.data || []);
                 setLastPage(res.last_page || 1);
+                setLoading(false);
             })
-            .catch((e) => setErr(e?.message || 'Failed to load reminders'))
-            .finally(() => setLoading(false));
+            .catch((e) => {
+                if (!alive) return;
+                setErr(e?.message || 'Failed to load reminders');
+                setLoading(false);
+            });
 
         return () => {
             alive = false;
@@ -262,7 +266,6 @@ export default function RemindersPage() {
 
     const pageIds = groups.map((g) => g.id);
     const allPageChecked = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
-    const somePageChecked = pageIds.some((id) => selected.has(id)) && !allPageChecked;
 
     function toggleGroup(id: number, checked: boolean) {
         setSelected((prev) => {

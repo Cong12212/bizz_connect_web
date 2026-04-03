@@ -124,6 +124,12 @@ export default function ReminderFormModal({
         e.preventDefault();
         if (contactIds.length === 0) return toast.error('Please choose at least one contact');
         if (!title.trim()) return toast.error('Title is required');
+        if (!dueLocal) return toast.error('Due at is required');
+
+        const dueMs = new Date(dueLocal).getTime();
+        if (Number.isNaN(dueMs) || dueMs < Date.now()) {
+            return toast.error('Due at must be now or in the future');
+        }
 
         setSaving(true);
         try {
@@ -172,7 +178,7 @@ export default function ReminderFormModal({
                             <div className="mt-2 text-sm text-slate-600">Loading…</div>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit} className="max-h-[75svh] overflow-auto px-5 py-4">
+                        <form noValidate onSubmit={handleSubmit} className="max-h-[75svh] overflow-auto px-5 py-4">
                             {/* Contacts */}
                             <div className="mb-3">
                                 <label className="mb-1 block text-sm text-slate-600">Contacts</label>
@@ -208,7 +214,7 @@ export default function ReminderFormModal({
                             <div className="mb-3">
                                 <label className="mb-1 block text-sm text-slate-600">Title</label>
                                 <input value={title} onChange={(e) => setTitle(e.target.value)}
-                                    className="w-full rounded-md border px-3 py-2" placeholder="Call / Meet / Send email..." required />
+                                    className="w-full rounded-md border px-3 py-2" placeholder="Call / Meet / Send email..." />
                             </div>
 
                             {/* Note */}
@@ -272,11 +278,10 @@ export default function ReminderFormModal({
                         onClose={() => setPickerOpen(false)}
                         token={token}
                         filters={{ q: '', sort: 'name' }}
-                        title="Pick contacts (without reminders)"
+                        title="Pick contacts"
                         confirmLabel="Use selected"
                         onConfirm={async (ids) => { addContacts(ids); setPickerOpen(false); }}
                         excludeIds={contactIds}
-                        withoutReminder={{ enabled: true, status: 'pending' }}
                     />
 
                 </div>
