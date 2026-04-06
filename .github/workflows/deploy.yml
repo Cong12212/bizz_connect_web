@@ -1,17 +1,36 @@
-name: Deploy Frontend to Hostinger
+name: Deploy Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [main, test]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy (main or test)"
+        required: false
+        default: ""
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Frontend code
+      - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Resolve environment config
+        id: env
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          if [ "$BRANCH" = "main" ]; then
+            echo "api_url=https://api.biz-connect.online/api"    >> $GITHUB_OUTPUT
+            echo "deploy_path=/home/u564264509/domains/biz-connect.online/public_html/api-fe" >> $GITHUB_OUTPUT
+            echo "label=Production"                               >> $GITHUB_OUTPUT
+          else
+            echo "api_url=https://test-api.biz-connect.online/api" >> $GITHUB_OUTPUT
+            echo "deploy_path=/home/u564264509/domains/biz-connect.online/public_html/test"   >> $GITHUB_OUTPUT
+            echo "label=Test"                                       >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -21,12 +40,12 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Install dependencies with Yarn
+      - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build Vite app
+      - name: Build
         env:
-          VITE_API_BASE_URL: https://biz-connect.online/backend/public/api
+          VITE_API_BASE_URL: ${{ steps.env.outputs.api_url }}
         run: yarn build
 
       - name: Setup SSH key
@@ -36,14 +55,13 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy Frontend via rsync
+      - name: Deploy via rsync
         run: |
           rsync -avz --progress --delete \
             -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
-            --exclude='backend' \
-            ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/u564264509/domains/biz-connect.online/public_html/
+            ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ steps.env.outputs.deploy_path }}/
 
-      - name: Setup .htaccess for React Router
+      - name: Write .htaccess
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -51,30 +69,20 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/u564264509/domains/biz-connect.online/public_html
+            DEPLOY_PATH="${{ steps.env.outputs.deploy_path }}"
 
-            cat > .htaccess << 'EOF'
+            cat > "$DEPLOY_PATH/.htaccess" << 'EOF'
             <IfModule mod_rewrite.c>
                 RewriteEngine On
                 RewriteBase /
-                
-                # Force HTTPS
+
                 RewriteCond %{HTTPS} off
                 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-                
-                # API routes -> Laravel backend
-                RewriteRule ^api/(.*)$ /backend/public/api/$1 [L,QSA]
-                
-                # Backend routes
-                RewriteRule ^backend/(.*)$ /backend/public/$1 [L,QSA]
-                
-                # React Router - Frontend
-                RewriteCond %{REQUEST_URI} !^/backend/
+
                 RewriteCond %{REQUEST_FILENAME} !-f
                 RewriteCond %{REQUEST_FILENAME} !-d
                 RewriteRule . /index.html [L]
             </IfModule>
             EOF
 
-            echo "===== Frontend deployed successfully! ====="
-            echo "URL: https://biz-connect.online"
+            echo "===== [${{ steps.env.outputs.label }}] Frontend deployed ====="

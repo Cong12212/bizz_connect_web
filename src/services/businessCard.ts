@@ -18,6 +18,9 @@ export interface BusinessCard {
     facebook?: string | null;
     twitter?: string | null;
     avatar?: string | null;
+    card_image_front?: string | null;
+    card_image_back?: string | null;
+    background_image?: string | null;
     notes?: string | null;
     is_public?: boolean;
     view_count?: number;
@@ -46,6 +49,11 @@ export interface BusinessCardFormData {
     facebook?: string;
     twitter?: string;
     avatar?: File;
+    card_image_front?: File;
+    card_image_back?: File;
+    background_image?: File;
+    clear_card_images?: boolean;
+    clear_background?: boolean;
     notes?: string;
     is_public?: boolean | 0 | 1;
 
@@ -68,6 +76,9 @@ export interface PublicBusinessCard {
     facebook?: string;
     twitter?: string;
     avatar?: string;
+    card_image_front?: string;
+    card_image_back?: string;
+    background_image?: string;
     view_count: number;
     company?: {
         name: string;
@@ -117,5 +128,23 @@ export async function getPublicBusinessCard(slug: string): Promise<PublicBusines
 
 export async function connectWithCard(slug: string): Promise<any> {
     const { data } = await api.post(`/business-card/connect/${slug}`);
+    return data;
+}
+
+export interface ExtractedCardInfo {
+    full_name?: string | null;
+    job_title?: string | null;
+    department?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    mobile?: string | null;
+    website?: string | null;
+    linkedin?: string | null;
+    company?: string | null;
+    address_detail?: string | null;
+}
+
+export async function extractBusinessCardInfo(rawText: string): Promise<ExtractedCardInfo> {
+    const { data } = await api.post('/business-card/extract', { text: rawText });
     return data;
 }
