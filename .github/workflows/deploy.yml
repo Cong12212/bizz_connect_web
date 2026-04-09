@@ -24,7 +24,7 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           if [ "$BRANCH" = "main" ]; then
             echo "api_url=https://api.biz-connect.online/api"    >> $GITHUB_OUTPUT
-            echo "deploy_path=/home/u564264509/domains/biz-connect.online/public_html/api-fe" >> $GITHUB_OUTPUT
+            echo "deploy_path=/home/u564264509/domains/biz-connect.online/public_html" >> $GITHUB_OUTPUT
             echo "label=Production"                               >> $GITHUB_OUTPUT
           else
             echo "api_url=https://test-api.biz-connect.online/api" >> $GITHUB_OUTPUT
