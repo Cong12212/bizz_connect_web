@@ -43,10 +43,13 @@ export interface Contact {
     updated_at?: string;
     address_id?: number | null;
     address?: AddressData | null;
-    tags?: Array<{
-        id: number;
-        name: string;
-    }>;
+    tags?: Array<{ id: number; name: string }>;
+    avatar?: string | null;
+    card_image_front?: string | null;
+    card_image_back?: string | null;
+    avatar_url?: string | null;
+    card_front_url?: string | null;
+    card_back_url?: string | null;
 }
 
 export type Paginated<T> = {
@@ -220,6 +223,29 @@ export async function downloadContactsTemplate(format: "xlsx" | "csv" = "xlsx", 
     a.click();
     URL.revokeObjectURL(a.href);
     a.remove();
+}
+
+/* ---------- Contact Images ---------- */
+
+export async function uploadContactAvatar(contactId: number, file: File, token?: string) {
+    const form = new FormData();
+    form.append("image", file);
+    return apiFetch<{ avatar_url: string }>(`/contacts/${contactId}/avatar`, { method: "POST", body: form }, token);
+}
+
+export async function deleteContactAvatar(contactId: number, token?: string) {
+    return apiFetch<{ ok: boolean }>(`/contacts/${contactId}/avatar`, { method: "DELETE" }, token);
+}
+
+export async function uploadContactCardImage(contactId: number, side: "front" | "back", file: File, token?: string) {
+    const form = new FormData();
+    form.append("image", file);
+    form.append("side", side);
+    return apiFetch<{ card_url: string }>(`/contacts/${contactId}/card-image`, { method: "POST", body: form }, token);
+}
+
+export async function deleteContactCardImage(contactId: number, side: "front" | "back", token?: string) {
+    return apiFetch<{ ok: boolean }>(`/contacts/${contactId}/card-image/${side}`, { method: "DELETE" }, token);
 }
 
 export async function importContacts(

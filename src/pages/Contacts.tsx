@@ -227,6 +227,7 @@ export default function ContactsPage() {
                         ) : selected ? (
                             <ContactDetail
                                 contact={selected}
+                                token={token}
                                 onEdit={() => {
                                     setEditTarget(selected);
                                     setOpenEdit(true);
