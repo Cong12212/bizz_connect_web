@@ -38,7 +38,7 @@ export default function CardGenerator({ card, company }: Props) {
         setDone(true);
     }
 
-    // ── FRONT: background image + name/contact overlay ──
+    // ── FRONT ──
     async function renderFront() {
         const canvas = frontRef.current;
         if (!canvas) return;
@@ -46,18 +46,26 @@ export default function CardGenerator({ card, company }: Props) {
         canvas.width = W;
         canvas.height = H;
 
-        // Background
-        const bgSrc = card.background_image || card.card_image_front;
-        if (bgSrc) {
+        // Nếu có ảnh mặt trước thật → chỉ hiển thị, không overlay
+        if (card.card_image_front) {
             try {
-                const bg = await loadImage(bgSrc);
+                const img = await loadImage(card.card_image_front);
+                coverDraw(ctx, img, 0, 0, W, H);
+            } catch { drawGradientBg(ctx); }
+            return;
+        }
+
+        // Có background_image → overlay thông tin lên
+        if (card.background_image) {
+            try {
+                const bg = await loadImage(card.background_image);
                 coverDraw(ctx, bg, 0, 0, W, H);
             } catch { drawGradientBg(ctx); }
         } else {
             drawGradientBg(ctx);
         }
 
-        // Overlay
+        // Overlay gradient
         const grad = ctx.createLinearGradient(0, 0, 0, H);
         grad.addColorStop(0, "rgba(0,0,0,0.04)");
         grad.addColorStop(0.45, "rgba(0,0,0,0.08)");
@@ -137,7 +145,7 @@ export default function CardGenerator({ card, company }: Props) {
         });
     }
 
-    // ── BACK: clean info card ──
+    // ── BACK ──
     async function renderBack() {
         const canvas = backRef.current;
         if (!canvas) return;
@@ -145,11 +153,19 @@ export default function CardGenerator({ card, company }: Props) {
         canvas.width = W;
         canvas.height = H;
 
-        // Background: soft blurred version of bg image or gradient
-        const bgSrc = card.background_image || card.card_image_back;
-        if (bgSrc) {
+        // Nếu có ảnh mặt sau thật → chỉ hiển thị, không overlay
+        if (card.card_image_back) {
             try {
-                const bg = await loadImage(bgSrc);
+                const img = await loadImage(card.card_image_back);
+                coverDraw(ctx, img, 0, 0, W, H);
+            } catch { drawGradientBg(ctx); }
+            return;
+        }
+
+        // Có background_image → blurred bg + overlay thông tin
+        if (card.background_image) {
+            try {
+                const bg = await loadImage(card.background_image);
                 ctx.filter = "blur(32px) brightness(0.45) saturate(0.6)";
                 coverDraw(ctx, bg, -40, -40, W + 80, H + 80);
                 ctx.filter = "none";
