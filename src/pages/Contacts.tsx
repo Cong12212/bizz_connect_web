@@ -62,7 +62,7 @@ export default function ContactsPage() {
     const [openEdit, setOpenEdit] = useState(false);
 
     const toast = useToast();
-    const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
     const [deleteBusy, setDeleteBusy] = useState(false);
 
     // load list
@@ -203,7 +203,10 @@ export default function ContactsPage() {
                             onPage={setPage}
                             selectedId={selectedId}
                             onSelect={(id) => nav(`/contacts/${id}`)}
-                            onDelete={(id) => setDeleteTarget(id)}
+                            onDelete={(id) => {
+                                const c = data.items.find((x) => x.id === id);
+                                setDeleteTarget({ id, name: c?.name ?? "" });
+                            }}
                             token={token}
                             onUpdated={(c) => {
                                 setData((d) => ({
@@ -279,7 +282,8 @@ export default function ContactsPage() {
                 open={openEdit}
                 onClose={() => setOpenEdit(false)}
                 token={token}
-                contact={editTarget}                    // null => new, object => edit
+                contact={editTarget}
+                onDelete={(id) => { setOpenEdit(false); setDeleteTarget({ id, name: editTarget?.name ?? "" }); }}
                 onSaved={(c) => {
                     setOpenEdit(false);
                     setSelected(c);
@@ -314,7 +318,7 @@ export default function ContactsPage() {
             <ConfirmDialog
                 open={deleteTarget !== null}
                 title="Delete contact"
-                message="This contact will be permanently deleted. This action cannot be undone."
+                message={`"${deleteTarget?.name}" will be permanently deleted. This action cannot be undone.`}
                 confirmLabel="Delete"
                 danger
                 busy={deleteBusy}
@@ -323,13 +327,13 @@ export default function ContactsPage() {
                     if (deleteTarget === null) return;
                     setDeleteBusy(true);
                     try {
-                        await deleteContact(deleteTarget, token);
+                        await deleteContact(deleteTarget.id, token);
                         setData((d) => ({
                             ...d,
-                            items: d.items.filter((x) => x.id !== deleteTarget),
+                            items: d.items.filter((x) => x.id !== deleteTarget.id),
                             total: d.total - 1,
                         }));
-                        if (selectedId === deleteTarget) nav("/contacts");
+                        if (selectedId === deleteTarget.id) nav("/contacts");
                         toast.success("Contact deleted successfully");
                         setDeleteTarget(null);
                     } finally {

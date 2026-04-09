@@ -10,13 +10,14 @@ import StateSelect from '../settings/StateSelect';
 import CitySelect from '../settings/CitySelect';
 
 export default function EditContactSheet({
-    open, onClose, token, contact, onSaved, initialForm,
+    open, onClose, token, contact, onSaved, onDelete, initialForm,
 }: {
     open: boolean;
     onClose: () => void;
     token: string;
     contact: Contact | null;
     onSaved: (c: Contact) => void;
+    onDelete?: (id: number) => void;
     initialForm?: Partial<Record<string, any>>;
 }) {
     const toast = useToast();
@@ -205,22 +206,37 @@ export default function EditContactSheet({
                     />
                 </div>
 
-                <div className="mt-6 flex items-center justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="rounded-xl px-4 py-2 text-slate-700 hover:bg-slate-100 disabled:opacity-60"
-                        disabled={saving}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={save}
-                        disabled={saving}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-                    >
-                        {saving && <Spinner />}
-                        {saving ? 'Saving…' : 'Save'}
-                    </button>
+                <div className="mt-6 flex items-center justify-between gap-3">
+                    {/* Left: Delete */}
+                    <div>
+                        {contact?.id && onDelete && (
+                            <button
+                                onClick={() => onDelete(contact.id)}
+                                disabled={saving}
+                                className="rounded-xl px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+                            >
+                                Delete
+                            </button>
+                        )}
+                    </div>
+                    {/* Right: Cancel + Save */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onClose}
+                            className="rounded-xl px-4 py-2 text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                            disabled={saving}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={save}
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                        >
+                            {saving && <Spinner />}
+                            {saving ? 'Saving…' : 'Save'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
