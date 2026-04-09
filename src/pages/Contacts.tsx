@@ -18,6 +18,8 @@ import useMediaQuery from "../hooks/useMediaQuery";
 import ContactDetailModal from "../components/contacts/ContactDetailModal";
 import ImportContactsModal from "../components/contacts/ImportContactsModal";
 import ExportContactsModal from "../components/contacts/ExportContactsModal";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { useToast } from "../components/ui/Toast";
 
 export default function ContactsPage() {
     const location = useLocation();
@@ -58,6 +60,10 @@ export default function ContactsPage() {
     const [openImport, setOpenImport] = useState(false);
     const [openExport, setOpenExport] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
+
+    const toast = useToast();
+    const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+    const [deleteBusy, setDeleteBusy] = useState(false);
 
     // load list
     useEffect(() => {
@@ -197,12 +203,7 @@ export default function ContactsPage() {
                             onPage={setPage}
                             selectedId={selectedId}
                             onSelect={(id) => nav(`/contacts/${id}`)}
-                            onDelete={async (id) => {
-                                if (!confirm("Delete this contact?")) return;
-                                await deleteContact(id, token);
-                                setData((d) => ({ ...d, items: d.items.filter((x) => x.id !== id) }));
-                                if (selectedId === id) nav("/contacts");
-                            }}
+                            onDelete={(id) => setDeleteTarget(id)}
                             token={token}
                             onUpdated={(c) => {
                                 setData((d) => ({
@@ -287,7 +288,7 @@ export default function ContactsPage() {
                         const exists = d.items.some((x) => x.id === c.id);
                         return exists
                             ? { ...d, items: d.items.map((x) => (x.id === c.id ? c : x)) }
-                            : { ...d, items: [c, ...d.items] };
+                            : { ...d, items: [c, ...d.items], total: d.total + 1 };
                     });
                 }}
                 initialForm={prefillData}
@@ -308,6 +309,33 @@ export default function ContactsPage() {
                 onClose={() => setOpenExport(false)}
                 token={token}
                 filters={{ q: qDebounced, sort }}
+            />
+
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                title="Delete contact"
+                message="This contact will be permanently deleted. This action cannot be undone."
+                confirmLabel="Delete"
+                danger
+                busy={deleteBusy}
+                onCancel={() => setDeleteTarget(null)}
+                onConfirm={async () => {
+                    if (deleteTarget === null) return;
+                    setDeleteBusy(true);
+                    try {
+                        await deleteContact(deleteTarget, token);
+                        setData((d) => ({
+                            ...d,
+                            items: d.items.filter((x) => x.id !== deleteTarget),
+                            total: d.total - 1,
+                        }));
+                        if (selectedId === deleteTarget) nav("/contacts");
+                        toast.success("Contact deleted successfully");
+                        setDeleteTarget(null);
+                    } finally {
+                        setDeleteBusy(false);
+                    }
+                }}
             />
         </div>
     );
