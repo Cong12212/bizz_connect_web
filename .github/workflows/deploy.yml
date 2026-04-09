@@ -58,6 +58,10 @@ jobs:
       - name: Deploy via rsync
         run: |
           rsync -avz --progress --delete \
+            --exclude='api/' \
+            --exclude='api-fe/' \
+            --exclude='test/' \
+            --exclude='test-api/' \
             -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
             ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ steps.env.outputs.deploy_path }}/
 
