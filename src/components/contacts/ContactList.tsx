@@ -27,7 +27,6 @@ export default function ContactList({
     onPage: (p: number) => void;
     selectedId?: number | null;
     onSelect: (id: number) => void;
-    onDelete: (id: number) => void;
     loading?: boolean;
     token?: string;
     onUpdated?: (c: Contact) => void;
@@ -98,16 +97,6 @@ export default function ContactList({
                                                     </div>
                                                 </div>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDelete(c.id);
-                                                    }}
-                                                    className={`inline-flex rounded-md bg-white/80 px-2 py-1 text-xs text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 md:transition-opacity ${active ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100"}`}
-                                                >
-                                                    Delete
-                                                </button>
                                             </div>
                                         </div>
                                     </li>

@@ -38,7 +38,7 @@ export default function ContactsPage() {
     const [page, setPage] = useState(1);
     const [per] = useState(30);
     const [sort, setSort] = useState<"name" | "-name" | "id" | "-id">("name");
-    const prefillData = location.state?.prefillData || null;
+    const [prefillData, setPrefillData] = useState<any>(null);
 
     const [data, setData] = useState<{ items: Contact[]; total: number; last: number }>({
         items: [],
@@ -117,8 +117,8 @@ export default function ContactsPage() {
     useEffect(() => {
         const state = location.state as any;
         if (state?.openCreateSheet && state?.prefillData) {
-            // Set prefilled data as edit target
-            setEditTarget(state.prefillData);
+            setPrefillData(state.prefillData);
+            setEditTarget(null);
             setOpenEdit(true);
 
             // Clear state immediately
@@ -203,10 +203,6 @@ export default function ContactsPage() {
                             onPage={setPage}
                             selectedId={selectedId}
                             onSelect={(id) => nav(`/contacts/${id}`)}
-                            onDelete={(id) => {
-                                const c = data.items.find((x) => x.id === id);
-                                setDeleteTarget({ id, name: c?.name ?? "" });
-                            }}
                             token={token}
                             onUpdated={(c) => {
                                 setData((d) => ({
@@ -220,11 +216,7 @@ export default function ContactsPage() {
 
                     {/* RIGHT: detail (desktop) */}
                     <section className="hidden overflow-y-auto p-6 md:block">
-                        {loadingDetail ? ( // Separate loading for detail
-                            <div className="grid h-full place-items-center text-slate-500">
-                                <div>Loading...</div>
-                            </div>
-                        ) : selected ? (
+                        {selected ? (
                             <ContactDetail
                                 contact={selected}
                                 token={token}
@@ -240,6 +232,10 @@ export default function ContactsPage() {
                                     }));
                                 }}
                             />
+                        ) : loadingDetail ? (
+                            <div className="grid h-full place-items-center text-slate-500">
+                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
+                            </div>
                         ) : (
                             <div className="grid h-full place-items-center text-center text-slate-500">
                                 <div>
@@ -281,7 +277,7 @@ export default function ContactsPage() {
             {/* Create / Edit */}
             <EditContactSheet
                 open={openEdit}
-                onClose={() => setOpenEdit(false)}
+                onClose={() => { setOpenEdit(false); setPrefillData(null); }}
                 token={token}
                 contact={editTarget}
                 onDelete={(id) => { setOpenEdit(false); setDeleteTarget({ id, name: editTarget?.name ?? "" }); }}

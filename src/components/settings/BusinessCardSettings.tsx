@@ -130,8 +130,33 @@ export default function BusinessCardSettings() {
 
                 {/* Preview or empty */}
                 {card ? (
-                    <div className="px-5 pb-5 pt-4">
-                        <CardGenerator card={card} company={company} />
+                    <div className="px-5 pb-5 pt-4 space-y-5">
+                        {/* Cards side by side */}
+                        <CardGenerator card={card} company={company} sideBySide />
+
+                        {/* Info below */}
+                        <div className="grid grid-cols-1 gap-3 rounded-xl border bg-slate-50 p-4 sm:grid-cols-2">
+                            {[
+                                { label: "Name",     value: card.full_name },
+                                { label: "Job Title", value: card.job_title },
+                                { label: "Email",    value: card.email },
+                                { label: "Phone",    value: card.phone },
+                                { label: "Mobile",   value: card.mobile },
+                                { label: "Website",  value: card.website },
+                                { label: "LinkedIn", value: card.linkedin },
+                            ].filter(f => f.value).map(f => (
+                                <div key={f.label} className="min-w-0">
+                                    <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{f.label}</div>
+                                    <div className="truncate text-sm text-slate-800">{f.value}</div>
+                                </div>
+                            ))}
+                            {(card.address as any)?.full_address && (
+                                <div className="sm:col-span-2 min-w-0">
+                                    <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Address</div>
+                                    <div className="text-sm text-slate-800">{(card.address as any).full_address}</div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-5 p-10 text-center">

@@ -10,24 +10,42 @@ const H = 600;
 interface Props {
     card: BusinessCard;
     company: Company | null;
+    onRendered?: (frontDataUrl: string | null, backDataUrl: string | null) => void;
+    sideBySide?: boolean;
 }
 
-export default function CardGenerator({ card, company }: Props) {
+export default function CardGenerator({ card, company, onRendered, sideBySide = false }: Props) {
     const frontRef = useRef<HTMLCanvasElement>(null);
     const backRef = useRef<HTMLCanvasElement>(null);
     const [generating, setGenerating] = useState(false);
     const [done, setDone] = useState(false);
 
-    useEffect(() => { renderBoth(); }, [card, company]);
+    // Use stable key string to avoid re-rendering when parent recreates objects
+    const cardKey = [
+        card.id, card.full_name, card.job_title, card.email, card.phone, card.mobile,
+        card.website, card.avatar, card.card_image_front, card.card_image_back,
+        card.background_image, company?.id, company?.logo,
+    ].join("|");
 
-    async function loadImage(src: string): Promise<HTMLImageElement> {
+    useEffect(() => { renderBoth(); }, [cardKey]);
+
+    async function loadImage(src: string, cors = false): Promise<HTMLImageElement> {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            img.crossOrigin = "anonymous";
+            if (cors) img.crossOrigin = "anonymous";
             img.onload = () => resolve(img);
             img.onerror = reject;
             img.src = src;
         });
+    }
+
+    // Try CORS first (needed for toDataURL), fall back to no-CORS (display only)
+    async function loadImageAny(src: string): Promise<HTMLImageElement> {
+        try {
+            return await loadImage(src, true);
+        } catch {
+            return await loadImage(src, false);
+        }
     }
 
     async function renderBoth() {
@@ -36,6 +54,13 @@ export default function CardGenerator({ card, company }: Props) {
         await Promise.all([renderFront(), renderBack()]);
         setGenerating(false);
         setDone(true);
+        if (onRendered) {
+            let front: string | null = null;
+            let back: string | null = null;
+            try { front = frontRef.current?.toDataURL("image/jpeg", 0.75) ?? null; } catch {}
+            try { back  = backRef.current?.toDataURL("image/jpeg", 0.75) ?? null; } catch {}
+            onRendered(front, back);
+        }
     }
 
     // ── FRONT ──
@@ -49,7 +74,7 @@ export default function CardGenerator({ card, company }: Props) {
         // Nếu có ảnh mặt trước thật → chỉ hiển thị, không overlay
         if (card.card_image_front) {
             try {
-                const img = await loadImage(card.card_image_front);
+                const img = await loadImageAny(card.card_image_front);
                 coverDraw(ctx, img, 0, 0, W, H);
             } catch { drawGradientBg(ctx); }
             return;
@@ -58,7 +83,7 @@ export default function CardGenerator({ card, company }: Props) {
         // Có background_image → overlay thông tin lên
         if (card.background_image) {
             try {
-                const bg = await loadImage(card.background_image);
+                const bg = await loadImageAny(card.background_image);
                 coverDraw(ctx, bg, 0, 0, W, H);
             } catch { drawGradientBg(ctx); }
         } else {
@@ -76,7 +101,7 @@ export default function CardGenerator({ card, company }: Props) {
         // Company logo top-left
         if (company?.logo) {
             try {
-                const logo = await loadImage(company.logo);
+                const logo = await loadImageAny(company.logo);
                 const lh = 58;
                 const lw = logo.width * (lh / logo.height);
                 ctx.drawImage(logo, 48, 38, lw, lh);
@@ -88,7 +113,7 @@ export default function CardGenerator({ card, company }: Props) {
         const avX = 52, avY = H - avSize - 58;
         if (card.avatar) {
             try {
-                const av = await loadImage(card.avatar);
+                const av = await loadImageAny(card.avatar);
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
@@ -156,7 +181,7 @@ export default function CardGenerator({ card, company }: Props) {
         // Nếu có ảnh mặt sau thật → chỉ hiển thị, không overlay
         if (card.card_image_back) {
             try {
-                const img = await loadImage(card.card_image_back);
+                const img = await loadImageAny(card.card_image_back);
                 coverDraw(ctx, img, 0, 0, W, H);
             } catch { drawGradientBg(ctx); }
             return;
@@ -165,7 +190,7 @@ export default function CardGenerator({ card, company }: Props) {
         // Có background_image → blurred bg + overlay thông tin
         if (card.background_image) {
             try {
-                const bg = await loadImage(card.background_image);
+                const bg = await loadImageAny(card.background_image);
                 ctx.filter = "blur(32px) brightness(0.45) saturate(0.6)";
                 coverDraw(ctx, bg, -40, -40, W + 80, H + 80);
                 ctx.filter = "none";
@@ -187,7 +212,7 @@ export default function CardGenerator({ card, company }: Props) {
         let logoH = 0;
         if (company?.logo) {
             try {
-                const logo = await loadImage(company.logo);
+                const logo = await loadImageAny(company.logo);
                 const lh = 70;
                 const lw = logo.width * (lh / logo.height);
                 ctx.drawImage(logo, (W - lw) / 2, 80, lw, lh);
@@ -245,43 +270,50 @@ export default function CardGenerator({ card, company }: Props) {
     function download(ref: React.RefObject<HTMLCanvasElement | null>, side: string) {
         const canvas = ref.current;
         if (!canvas) return;
-        const link = document.createElement("a");
-        link.download = `business-card-${side}-${(card.full_name || "card").replace(/\s+/g, "-").toLowerCase()}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        try {
+            const link = document.createElement("a");
+            link.download = `business-card-${side}-${(card.full_name || "card").replace(/\s+/g, "-").toLowerCase()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } catch {
+            // Canvas tainted by cross-origin image — download the source image directly
+            const src = side === "front"
+                ? (card.card_image_front || card.background_image)
+                : (card.card_image_back || card.background_image);
+            if (src) { window.open(src, "_blank"); }
+            else { alert("Cannot download: image blocked by browser security policy."); }
+        }
+    }
+
+    const cardSlot = (label: string, ref: React.RefObject<HTMLCanvasElement | null>, side: string) => (
+        <div className="space-y-2 min-w-0">
+            <p className="text-xs font-medium text-slate-500">{label}</p>
+            <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/10" style={{ aspectRatio: "1.586" }}>
+                <canvas ref={ref} className="h-full w-full" />
+                {generating && <LoadingOverlay />}
+            </div>
+            {done && (
+                <button onClick={() => download(ref, side)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                    <ArrowDownTrayIcon className="h-4 w-4" /> Download {label}
+                </button>
+            )}
+        </div>
+    );
+
+    if (sideBySide) {
+        return (
+            <div className="grid grid-cols-2 gap-4">
+                {cardSlot("Front", frontRef, "front")}
+                {cardSlot("Back", backRef, "back")}
+            </div>
+        );
     }
 
     return (
         <div className="space-y-4">
-            {/* Front */}
-            <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500">Front</p>
-                <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/10" style={{ aspectRatio: "1.586" }}>
-                    <canvas ref={frontRef} className="h-full w-full" />
-                    {generating && <LoadingOverlay />}
-                </div>
-                {done && (
-                    <button onClick={() => download(frontRef, "front")}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                        <ArrowDownTrayIcon className="h-4 w-4" /> Download Front
-                    </button>
-                )}
-            </div>
-
-            {/* Back */}
-            <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-500">Back</p>
-                <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/10" style={{ aspectRatio: "1.586" }}>
-                    <canvas ref={backRef} className="h-full w-full" />
-                    {generating && <LoadingOverlay />}
-                </div>
-                {done && (
-                    <button onClick={() => download(backRef, "back")}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                        <ArrowDownTrayIcon className="h-4 w-4" /> Download Back
-                    </button>
-                )}
-            </div>
+            {cardSlot("Front", frontRef, "front")}
+            {cardSlot("Back", backRef, "back")}
         </div>
     );
 }

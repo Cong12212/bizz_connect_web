@@ -248,6 +248,14 @@ export async function deleteContactCardImage(contactId: number, side: "front" | 
     return apiFetch<{ ok: boolean }>(`/contacts/${contactId}/card-image/${side}`, { method: "DELETE" }, token);
 }
 
+export async function copyContactCardImageFromUrl(contactId: number, side: "front" | "back", url: string, token?: string) {
+    return apiFetch<{ card_url: string }>(
+        `/contacts/${contactId}/card-image/copy-url`,
+        { method: "POST", body: JSON.stringify({ side, url }) },
+        token
+    );
+}
+
 export async function importContacts(
     file: File,
     match_by: "id" | "email" | "phone" = "id",

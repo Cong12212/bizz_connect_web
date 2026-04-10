@@ -22,6 +22,7 @@ export default function PublicBusinessCardPage() {
     const [card, setCard] = useState<PublicBusinessCard | null>(null);
     const [loading, setLoading] = useState(true);
     const [requiresAuth, setRequiresAuth] = useState(false);
+    const [cardDataUrls, setCardDataUrls] = useState<{ front: string | null; back: string | null }>({ front: null, back: null });
 
     useEffect(() => {
         if (slug) loadCard();
@@ -58,6 +59,8 @@ export default function PublicBusinessCardPage() {
             country: card?.address?.country?.code || "",
             state: card?.address?.state?.code || "",
             city: card?.address?.city?.code || "",
+            _card_front_url: card!.card_image_front || cardDataUrls.front || card!.background_image || null,
+            _card_back_url: card!.card_image_back || cardDataUrls.back || null,
         };
         navigate("/contacts", { state: { openCreateSheet: true, prefillData } });
     }
@@ -178,7 +181,11 @@ export default function PublicBusinessCardPage() {
                     {/* Generated card (front + back) */}
                     <div className="p-5">
                         <p className="mb-3 text-xs font-medium text-slate-500">Business Card</p>
-                        <CardGenerator card={cardForGenerator} company={companyForGenerator} />
+                        <CardGenerator
+                            card={cardForGenerator}
+                            company={companyForGenerator}
+                            onRendered={(front, back) => setCardDataUrls({ front, back })}
+                        />
                     </div>
 
                     {/* Contact Info */}
