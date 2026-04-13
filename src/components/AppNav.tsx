@@ -36,7 +36,7 @@ export default function AppNav({ variant, onOpenSettings, className }: Props) {
                     "flex items-center justify-between px-4 py-3 text-white bg-gradient-to-r from-sky-600 via-indigo-600 to-indigo-700"
                 }
             >
-                <img src="/bizzconnect.png" alt="BizConnect" className="h-7 w-auto brightness-0 invert" />
+                <img src="/bizzconnect.png" alt="BizConnect" className="h-12 w-auto brightness-0 invert" />
 
                 <details className="relative">
                     <summary
@@ -85,7 +85,7 @@ export default function AppNav({ variant, onOpenSettings, className }: Props) {
             }
         >
             <div className="mb-4 px-1">
-                <img src="/bizzconnect.png" alt="BizConnect" className="h-9 w-auto brightness-0 invert" />
+                <img src="/bizzconnect.png" alt="BizConnect" className="h-28 w-auto brightness-0 invert" />
             </div>
 
             <nav className="flex-1 space-y-2 px-1">
