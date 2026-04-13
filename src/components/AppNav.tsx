@@ -36,7 +36,7 @@ export default function AppNav({ variant, onOpenSettings, className }: Props) {
                     "flex items-center justify-between px-4 py-3 text-white bg-gradient-to-r from-sky-600 via-indigo-600 to-indigo-700"
                 }
             >
-                <div className="text-lg font-semibold">BizConnect</div>
+                <img src="/bizzconnect.png" alt="BizConnect" className="h-7 w-auto brightness-0 invert" />
 
                 <details className="relative">
                     <summary
@@ -84,7 +84,9 @@ export default function AppNav({ variant, onOpenSettings, className }: Props) {
                 "fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-white/10 bg-gradient-to-b from-sky-600 via-indigo-600 to-indigo-700 p-4 text-white md:flex"
             }
         >
-            <div className="mb-4 px-1 text-xl font-semibold tracking-wide">BizConnect</div>
+            <div className="mb-4 px-1">
+                <img src="/bizzconnect.png" alt="BizConnect" className="h-9 w-auto brightness-0 invert" />
+            </div>
 
             <nav className="flex-1 space-y-2 px-1">
                 {links.map(({ to, label, Icon }) => (

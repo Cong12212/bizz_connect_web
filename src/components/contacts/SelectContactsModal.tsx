@@ -6,6 +6,7 @@ import {
     type Contact,
 } from '@/services/contacts';
 import type { Tag } from '@/services/tags';
+import useDebounced from '@/hooks/useDebounced';
 
 type Filters = {
     q?: string;
@@ -64,6 +65,7 @@ export default function SelectContactsModal({
     const [actionBusy, setActionBusy] = useState(false);
 
     const [q, setQ] = useState(filters.q || '');
+    const debouncedQ = useDebounced(q, 300);
     const [sort, setSort] = useState<Filters['sort']>(filters.sort || 'name');
     const [selected, setSelected] = useState<Set<number>>(new Set());
     const [viewWithout, setViewWithout] = useState(false);
@@ -115,7 +117,7 @@ export default function SelectContactsModal({
         setErr(null);
 
         try {
-            const base: any = { q, sort, page, per_page: per, exclude_ids: excludeIds };
+            const base: any = { q: debouncedQ, sort, page, per_page: per, exclude_ids: excludeIds };
 
             let res: any;
             if (withoutReminder?.enabled) {
@@ -137,7 +139,7 @@ export default function SelectContactsModal({
                     token,
                 );
             } else {
-                res = await listContacts({ ...base, ...filters }, token);
+                res = await listContacts({ ...filters, ...base }, token);
             }
 
             if (currentSeq !== fetchSeq.current) return;
@@ -161,7 +163,7 @@ export default function SelectContactsModal({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         open,
-        q,
+        debouncedQ,
         sort,
         page,
         per,
@@ -322,8 +324,7 @@ export default function SelectContactsModal({
                                         setQ(e.target.value);
                                     }}
                                     placeholder="Search by name, email, company..."
-                                    className="w-[320px] rounded-lg border border-slate-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:bg-slate-100"
-                                    disabled={disableAll}
+                                    className="w-[320px] rounded-lg border border-slate-300 bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-blue-400"
                                 />
                             </div>
                         </div>
