@@ -11,7 +11,7 @@ import { Spinner, useToast } from '../ui/Toast';
 import CountrySelect from '../settings/CountrySelect';
 import StateSelect from '../settings/StateSelect';
 import CitySelect from '../settings/CitySelect';
-import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, XMarkIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/outline';
 
 export default function EditContactSheet({
     open, onClose, token, contact, onSaved, onDelete, initialForm,
@@ -236,8 +236,22 @@ export default function EditContactSheet({
 
                     {/* Card front + back */}
                     <div className="flex flex-1 gap-2">
-                        <MiniCardBox label="Card Front" preview={frontPreview} inputRef={frontInputRef} onPick={pickFront} disabled={saving} />
-                        <MiniCardBox label="Card Back"  preview={backPreview}  inputRef={backInputRef}  onPick={pickBack}  disabled={saving} />
+                        <MiniCardBox
+                            label="Card Front"
+                            preview={frontPreview}
+                            inputRef={frontInputRef}
+                            onPick={pickFront}
+                            onDelete={() => { setFrontPreview(null); setPendingFront(null); if (frontInputRef.current) frontInputRef.current.value = ''; }}
+                            disabled={saving}
+                        />
+                        <MiniCardBox
+                            label="Card Back"
+                            preview={backPreview}
+                            inputRef={backInputRef}
+                            onPick={pickBack}
+                            onDelete={() => { setBackPreview(null); setPendingBack(null); if (backInputRef.current) backInputRef.current.value = ''; }}
+                            disabled={saving}
+                        />
                     </div>
                 </div>
 
@@ -307,36 +321,99 @@ export default function EditContactSheet({
 
 // ── Mini card image box ────────────────────────────────────────────────────────
 
-function MiniCardBox({ label, preview, inputRef, onPick, disabled }: {
+function MiniCardBox({ label, preview, inputRef, onPick, onDelete, disabled }: {
     label: string;
     preview: string | null;
     inputRef: React.RefObject<HTMLInputElement | null>;
     onPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onDelete: () => void;
     disabled?: boolean;
 }) {
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+
+    function handleDelete(e: React.MouseEvent) {
+        e.stopPropagation();
+        if (window.confirm(`Bạn có chắc muốn xoá ảnh "${label}" không?`)) {
+            onDelete();
+        }
+    }
+
+    function handleReplace(e: React.MouseEvent) {
+        e.stopPropagation();
+        if (!disabled) inputRef.current?.click();
+    }
+
     return (
-        <div className="group flex-1 space-y-1">
-            <div className="text-xs text-slate-500">{label}</div>
-            <div
-                onClick={() => !disabled && inputRef.current?.click()}
-                className="relative aspect-[1.586] cursor-pointer overflow-hidden rounded-lg border bg-slate-50"
-            >
-                {preview ? (
-                    <>
-                        <img src={preview} alt={label} className="h-full w-full object-cover" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                            <ArrowUpTrayIcon className="h-4 w-4 text-white" />
+        <>
+            <div className="group flex-1 space-y-1">
+                <div className="text-xs text-slate-500">{label}</div>
+                <div className="relative aspect-[1.586] overflow-hidden rounded-lg border bg-slate-50">
+                    {preview ? (
+                        <>
+                            {/* Click image → open lightbox */}
+                            <img
+                                src={preview}
+                                alt={label}
+                                className="h-full w-full cursor-zoom-in object-cover"
+                                onClick={() => setLightboxOpen(true)}
+                            />
+                            {/* Hover overlay: replace button */}
+                            <div className="absolute inset-0 flex items-end justify-end p-1 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
+                                <button
+                                    type="button"
+                                    onClick={handleReplace}
+                                    disabled={disabled}
+                                    className="pointer-events-auto rounded bg-black/60 p-1 text-white hover:bg-black/80"
+                                    title="Thay ảnh mới"
+                                >
+                                    <ArrowUpTrayIcon className="h-3 w-3" />
+                                </button>
+                            </div>
+                            {/* Delete "x" button — always visible top-right */}
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={disabled}
+                                className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white hover:bg-rose-600 disabled:opacity-40"
+                                title="Xoá ảnh"
+                            >
+                                <XMarkIcon className="h-3 w-3" />
+                            </button>
+                        </>
+                    ) : (
+                        <div
+                            onClick={() => !disabled && inputRef.current?.click()}
+                            className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:border-slate-300"
+                        >
+                            <ArrowUpTrayIcon className="h-4 w-4" />
+                            <span className="text-[10px]">Upload</span>
                         </div>
-                    </>
-                ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:border-slate-300">
-                        <ArrowUpTrayIcon className="h-4 w-4" />
-                        <span className="text-[10px]">Upload</span>
-                    </div>
-                )}
+                    )}
+                </div>
+                <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
             </div>
-            <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
-        </div>
+
+            {/* Lightbox */}
+            {lightboxOpen && preview && (
+                <div
+                    className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 p-4"
+                    onClick={() => setLightboxOpen(false)}
+                >
+                    <div className="relative max-h-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+                        <img src={preview} alt={label} className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl" />
+                        <button
+                            type="button"
+                            onClick={() => setLightboxOpen(false)}
+                            className="absolute -right-3 -top-3 rounded-full bg-white p-1 shadow-md hover:bg-slate-100"
+                            title="Đóng"
+                        >
+                            <XMarkIcon className="h-5 w-5 text-slate-700" />
+                        </button>
+                        <div className="mt-2 text-center text-sm text-white/80">{label}</div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 

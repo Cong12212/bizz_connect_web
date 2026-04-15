@@ -53,6 +53,8 @@ export interface BusinessCardFormData {
     card_image_back?: File;
     background_image?: File;
     clear_card_images?: boolean;
+    clear_card_front?: boolean;
+    clear_card_back?: boolean;
     clear_background?: boolean;
     notes?: string;
     is_public?: boolean | 0 | 1;

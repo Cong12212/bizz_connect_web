@@ -302,10 +302,22 @@ export default function CardGenerator({ card, company, onRendered, sideBySide = 
     );
 
     if (sideBySide) {
+        // Digital card (background_image) → always show both Front and Back
+        if (card.background_image) {
+            return (
+                <div className="grid grid-cols-2 gap-4">
+                    {cardSlot("Front", frontRef, "front")}
+                    {cardSlot("Back",  backRef,  "back")}
+                </div>
+            );
+        }
+        // Physical images → show only the ones that exist
+        const showFront = !!card.card_image_front;
+        const showBack  = !!card.card_image_back;
         return (
-            <div className="grid grid-cols-2 gap-4">
-                {cardSlot("Front", frontRef, "front")}
-                {cardSlot("Back", backRef, "back")}
+            <div className={`grid gap-4 ${showFront && showBack ? "grid-cols-2" : "mx-auto max-w-lg grid-cols-1"}`}>
+                {showFront && cardSlot("Front", frontRef, "front")}
+                {showBack  && cardSlot("Back",  backRef,  "back")}
             </div>
         );
     }

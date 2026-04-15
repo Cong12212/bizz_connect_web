@@ -131,8 +131,10 @@ export default function BusinessCardSettings() {
                 {/* Preview or empty */}
                 {card ? (
                     <div className="px-5 pb-5 pt-4 space-y-5">
-                        {/* Cards side by side */}
-                        <CardGenerator card={card} company={company} sideBySide />
+                        {/* Cards — only render when there's something to show */}
+                        {(card.card_image_front || card.card_image_back || card.background_image) && (
+                            <CardGenerator card={card} company={company} sideBySide />
+                        )}
 
                         {/* Info below */}
                         <div className="grid grid-cols-1 gap-3 rounded-xl border bg-slate-50 p-4 sm:grid-cols-2">
@@ -280,12 +282,16 @@ function CardDialog({
     const [backFile, setBackFile] = useState<File | null>(null);
     const [frontPreview, setFrontPreview] = useState(card?.card_image_front || "");
     const [backPreview, setBackPreview] = useState(card?.card_image_back || "");
+    // Track if user explicitly removed an existing server image (needs clear flag on save)
+    const [clearFront, setClearFront] = useState(false);
+    const [clearBack, setClearBack] = useState(false);
     const [extracting, setExtracting] = useState(false);
     const [ocrProgress, setOcrProgress] = useState(0);
 
     // Digital mode state
     const [bgFile, setBgFile] = useState<File | null>(null);
     const [bgPreview, setBgPreview] = useState(card?.background_image || "");
+    const [clearBg, setClearBg] = useState(false);
 
     const [form, setForm] = useState<BusinessCardFormData>(initForm(card));
     const [saving, setSaving] = useState(false);
@@ -331,10 +337,13 @@ function CardDialog({
 
             if (mode === "physical") {
                 if (frontFile) payload.card_image_front = frontFile;
+                else if (clearFront) payload.clear_card_front = true;
                 if (backFile) payload.card_image_back = backFile;
+                else if (clearBack) payload.clear_card_back = true;
                 if (card?.background_image) payload.clear_background = true;
             } else {
                 if (bgFile) payload.background_image = bgFile;
+                else if (clearBg) payload.clear_background = true;
                 if (card?.card_image_front || card?.card_image_back) payload.clear_card_images = true;
             }
 
@@ -388,13 +397,21 @@ function CardDialog({
                                         loading={extracting}
                                         progress={ocrProgress}
                                         onChange={handleFrontSelect}
-                                        onRemove={() => { setFrontFile(null); setFrontPreview(""); }}
+                                        onRemove={() => {
+                                            if (frontPreview && !frontFile) setClearFront(true);
+                                            setFrontFile(null);
+                                            setFrontPreview("");
+                                        }}
                                     />
                                     <CardImageUpload
                                         label="Back"
                                         preview={backPreview}
                                         onChange={(f) => { setBackFile(f); setBackPreview(URL.createObjectURL(f)); }}
-                                        onRemove={() => { setBackFile(null); setBackPreview(""); }}
+                                        onRemove={() => {
+                                            if (backPreview && !backFile) setClearBack(true);
+                                            setBackFile(null);
+                                            setBackPreview("");
+                                        }}
                                     />
                                 </div>
                                 {extracting && (
@@ -421,12 +438,12 @@ function CardDialog({
                                     </span>
                                 </div>
                                 {bgPreview ? (
-                                    <div className="group relative overflow-hidden rounded-xl border" style={{ aspectRatio: "16/9" }}>
+                                    <div className="relative overflow-hidden rounded-xl border" style={{ aspectRatio: "16/9" }}>
                                         <img src={bgPreview} alt="Background" className="h-full w-full object-cover" />
                                         <button
                                             type="button"
-                                            onClick={() => { setBgFile(null); setBgPreview(""); }}
-                                            className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                            onClick={() => { if (bgPreview && !bgFile) setClearBg(true); setBgFile(null); setBgPreview(""); }}
+                                            className="absolute right-2 top-2 rounded-full bg-rose-600 p-1 text-white hover:bg-rose-700"
                                         >
                                             <XMarkIcon className="h-4 w-4" />
                                         </button>
@@ -494,7 +511,7 @@ function CardImageUpload({ label, preview, loading, progress, onChange, onRemove
                             {(progress ?? 0) > 0 && <span className="text-xs text-white">{progress}%</span>}
                         </div>
                     ) : (
-                        <button type="button" onClick={onRemove} className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        <button type="button" onClick={onRemove} className="absolute right-1.5 top-1.5 rounded-full bg-rose-600 p-1 text-white hover:bg-rose-700">
                             <XMarkIcon className="h-3.5 w-3.5" />
                         </button>
                     )}
