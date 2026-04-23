@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import AppNav from "../components/AppNav";
 import useDebounced from "../hooks/useDebounced";
@@ -94,24 +94,22 @@ export default function ContactsPage() {
             return;
         }
 
-        // Check if data already exists in list
-        const cached = data.items.find((x) => x.id === selectedId);
-        if (cached) {
-            setSelected(cached); // Display data from list immediately
-        }
+        // Show cached data immediately while fetching full detail
+        const cached = dataItemsRef.current.find((x) => x.id === selectedId);
+        if (cached) setSelected(cached);
 
-        // Fetch full detail
-        setLoadingDetail(true); // Only loading detail
+        setLoadingDetail(true);
         getContact(selectedId, token)
             .then((full) => setSelected(full))
             .catch(() => {
-                const fallback = data.items.find((x) => x.id === selectedId) || null;
+                const fallback = dataItemsRef.current.find((x) => x.id === selectedId) || null;
                 setSelected(fallback);
             })
             .finally(() => setLoadingDetail(false));
 
         if (isMobile) setOpenDetailMobile(true);
-    }, [selectedId, token, data.items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedId, token]);
 
     // Handle prefilled data from business card
     useEffect(() => {
@@ -125,6 +123,10 @@ export default function ContactsPage() {
             nav(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, nav, location.pathname]);
+
+    // Ref to always access latest data.items inside effects without causing re-runs
+    const dataItemsRef = useRef(data.items);
+    useEffect(() => { dataItemsRef.current = data.items; });
 
     const list = useMemo(() => data.items, [data.items]);
 

@@ -144,11 +144,11 @@ export default function EditContactSheet({
             }
             if (pendingFront) {
                 const r = await uploadContactCardImage(saved.id, 'front', pendingFront, token);
-                saved = { ...saved, card_front_url: r.card_url };
+                saved = { ...saved, card_front_url: `${r.card_url}?t=${Date.now()}` };
             }
             if (pendingBack) {
                 const r = await uploadContactCardImage(saved.id, 'back', pendingBack, token);
-                saved = { ...saved, card_back_url: r.card_url };
+                saved = { ...saved, card_back_url: `${r.card_url}?t=${Date.now()}` };
             }
 
             // Copy card images from business card (new contact only)

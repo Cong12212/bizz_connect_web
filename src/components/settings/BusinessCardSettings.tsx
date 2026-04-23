@@ -347,7 +347,15 @@ function CardDialog({
                 if (card?.card_image_front || card?.card_image_back) payload.clear_card_images = true;
             }
 
-            const saved = await saveBusinessCard(payload);
+            const raw = await saveBusinessCard(payload);
+            // Cache-bust replaced image URLs so browser fetches the new file
+            const ts = Date.now();
+            const saved = {
+                ...raw,
+                card_image_front: raw.card_image_front ? `${raw.card_image_front}?t=${ts}` : raw.card_image_front,
+                card_image_back:  raw.card_image_back  ? `${raw.card_image_back}?t=${ts}`  : raw.card_image_back,
+                background_image: raw.background_image ? `${raw.background_image}?t=${ts}` : raw.background_image,
+            };
             toast.success("Business card saved!");
             onSaved(saved);
         } catch (e: any) {

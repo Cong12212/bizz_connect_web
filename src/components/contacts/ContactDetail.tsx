@@ -32,7 +32,7 @@ export default function ContactDetail({
         setAvatarBusy(true);
         try {
             const { avatar_url } = await uploadContactAvatar(contact.id, file, token);
-            onUpdated({ ...contact, avatar_url });
+            onUpdated({ ...contact, avatar_url: `${avatar_url}?t=${Date.now()}` });
             toast.success("Avatar updated");
         } catch {
             toast.error("Failed to upload avatar");
@@ -63,10 +63,11 @@ export default function ContactDetail({
         setCardBusy((b) => ({ ...b, [side]: true }));
         try {
             const { card_url } = await uploadContactCardImage(contact.id, side, file, token);
+            const bustedUrl = `${card_url}?t=${Date.now()}`;
             onUpdated({
                 ...contact,
-                card_front_url: side === "front" ? card_url : contact.card_front_url,
-                card_back_url:  side === "back"  ? card_url : contact.card_back_url,
+                card_front_url: side === "front" ? bustedUrl : contact.card_front_url,
+                card_back_url:  side === "back"  ? bustedUrl : contact.card_back_url,
             });
             toast.success(`Card ${side} updated`);
         } catch {
