@@ -254,9 +254,9 @@ function CardImageBox({ label, url, busy, inputRef, onUpload, onDelete }: {
                 {url ? (
                     <>
                         <img src={url} alt={`Card ${label}`} className="h-full w-full object-cover" />
-                        {/* Hover actions */}
+                        {/* Hover actions — always visible on touch devices */}
                         {!busy && (
-                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                                 <button
                                     onClick={() => inputRef.current?.click()}
                                     className="flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-800 hover:bg-white"

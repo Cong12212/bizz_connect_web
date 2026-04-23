@@ -357,8 +357,8 @@ function MiniCardBox({ label, preview, inputRef, onPick, onDelete, disabled }: {
                                 className="h-full w-full cursor-zoom-in object-cover"
                                 onClick={() => setLightboxOpen(true)}
                             />
-                            {/* Hover overlay: replace button */}
-                            <div className="absolute inset-0 flex items-end justify-end p-1 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
+                            {/* Replace button — always visible on touch devices */}
+                            <div className="absolute inset-0 flex items-end justify-end p-1 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none [@media(hover:none)]:opacity-100">
                                 <button
                                     type="button"
                                     onClick={handleReplace}
