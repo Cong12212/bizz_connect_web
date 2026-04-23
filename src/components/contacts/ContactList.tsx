@@ -15,7 +15,6 @@ export default function ContactList({
     onPage,
     selectedId,
     onSelect,
-    onDelete,
     loading,
     token,
     onUpdated,
@@ -53,6 +52,7 @@ export default function ContactList({
                         : items.length ? (
                             items.map((c) => {
                                 const active = selectedId === c.id;
+                                const avatarSrc = getContactAvatarSrc(c);
                                 return (
                                     <li key={c.id} className="group relative">
                                         <div
@@ -70,8 +70,17 @@ export default function ContactList({
                                             className={`cursor-pointer rounded-xl px-3 py-2 text-left hover:bg-slate-100 ${active ? "bg-slate-100 ring-1 ring-slate-200" : ""}`}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className="grid h-10 w-10 place-items-center rounded-full bg-slate-200 text-sm font-semibold">
-                                                    {initials(c.name)}
+                                                <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold">
+                                                    {avatarSrc
+                                                        ? (
+                                                            <img
+                                                                src={avatarSrc}
+                                                                alt={c.name}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        )
+                                                        : initials(c.name)
+                                                    }
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
@@ -120,7 +129,7 @@ export default function ContactList({
                 className="fixed inset-x-0 bottom-0 z-40 border-t bg-white p-2 md:hidden"
                 style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             >
-                <div className="mx-auto flex max-w-[640px] justify-center">
+                <div className="mx-auto flex max-w-160 justify-center">
                     <NumberPager current={page} total={Math.max(1, last)} onPage={onPage} />
                 </div>
             </div>
@@ -332,6 +341,10 @@ function TagContextMenu({
 function initials(name?: string) {
     if (!name) return "?";
     return name.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
+}
+
+function getContactAvatarSrc(contact: Contact) {
+    return contact.avatar_url || contact.avatar || null;
 }
 
 function getVisiblePages(current: number, total: number, max = 7): (number | "...")[] {
