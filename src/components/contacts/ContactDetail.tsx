@@ -32,7 +32,7 @@ export default function ContactDetail({
         setAvatarBusy(true);
         try {
             const { avatar_url } = await uploadContactAvatar(contact.id, file, token);
-            onUpdated({ ...contact, avatar_url: `${avatar_url}?t=${Date.now()}` });
+            onUpdated({ ...contact, avatar_url, updated_at: new Date().toISOString() });
             toast.success("Avatar updated");
         } catch {
             toast.error("Failed to upload avatar");
@@ -63,11 +63,11 @@ export default function ContactDetail({
         setCardBusy((b) => ({ ...b, [side]: true }));
         try {
             const { card_url } = await uploadContactCardImage(contact.id, side, file, token);
-            const bustedUrl = `${card_url}?t=${Date.now()}`;
             onUpdated({
                 ...contact,
-                card_front_url: side === "front" ? bustedUrl : contact.card_front_url,
-                card_back_url:  side === "back"  ? bustedUrl : contact.card_back_url,
+                card_front_url: side === "front" ? card_url : contact.card_front_url,
+                card_back_url:  side === "back"  ? card_url : contact.card_back_url,
+                updated_at: new Date().toISOString(),
             });
             toast.success(`Card ${side} updated`);
         } catch {
@@ -135,7 +135,7 @@ export default function ContactDetail({
                             className="relative grid h-16 w-16 cursor-pointer place-items-center overflow-hidden rounded-full bg-slate-200 text-lg font-semibold"
                         >
                             {contact.avatar_url
-                                ? <img src={contact.avatar_url} alt={contact.name} className="h-full w-full object-cover" />
+                                ? <img src={bustUrl(contact.avatar_url, contact.updated_at) as string} alt={contact.name} className="h-full w-full object-cover" />
                                 : <span>{initials(contact.name)}</span>
                             }
                             {/* Hover overlay */}
@@ -205,7 +205,7 @@ export default function ContactDetail({
                 <div className="grid grid-cols-2 gap-3">
                     <CardImageBox
                         label="Front"
-                        url={contact.card_front_url ?? null}
+                        url={bustUrl(contact.card_front_url, contact.updated_at) ?? null}
                         busy={cardBusy.front}
                         inputRef={frontInputRef}
                         onUpload={(e) => handleCardChange("front", e)}
@@ -213,7 +213,7 @@ export default function ContactDetail({
                     />
                     <CardImageBox
                         label="Back"
-                        url={contact.card_back_url ?? null}
+                        url={bustUrl(contact.card_back_url, contact.updated_at) ?? null}
                         busy={cardBusy.back}
                         inputRef={backInputRef}
                         onUpload={(e) => handleCardChange("back", e)}
@@ -294,6 +294,13 @@ function CardImageBox({ label, url, busy, inputRef, onUpload, onDelete }: {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+function bustUrl(url: string | null | undefined, updatedAt?: string): string | null | undefined {
+    if (!url) return url;
+    const ts = updatedAt ? new Date(updatedAt).getTime() : 0;
+    if (!ts) return url;
+    return `${url.split('?')[0]}?t=${ts}`;
+}
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
     return (
