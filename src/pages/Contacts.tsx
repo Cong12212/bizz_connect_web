@@ -86,6 +86,10 @@ export default function ContactsPage() {
         };
     }, [qDebounced, page, per, sort, token, refreshKey]);
 
+    // Ref to always access latest data.items inside effects without causing re-runs
+    const dataItemsRef = useRef(data.items);
+    useEffect(() => { dataItemsRef.current = data.items; });
+
     // fetch full khi chọn item khác
     useEffect(() => {
         if (!selectedId) {
@@ -123,10 +127,6 @@ export default function ContactsPage() {
             nav(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, nav, location.pathname]);
-
-    // Ref to always access latest data.items inside effects without causing re-runs
-    const dataItemsRef = useRef(data.items);
-    useEffect(() => { dataItemsRef.current = data.items; });
 
     const list = useMemo(() => data.items, [data.items]);
 
