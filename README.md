@@ -1,963 +1,536 @@
-# BizConnect - Business Contact Management System
+# Bizz Connect — React 19 Frontend
 
-<div align="center">
-  <img src="public/bizzconnect.png" alt="BizConnect Logo" width="200"/>
-  
-  [![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-  [![Vite](https://img.shields.io/badge/Vite-5.x-purple.svg)](https://vitejs.dev/)
-  [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38bdf8.svg)](https://tailwindcss.com/)
-  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-  <p align="center">
-    A modern, full-featured business contact management system
-    <br />
-    <a href="#features"><strong>Explore Features »</strong></a>
-    <br />
-    <br />
-    <a href="#demo">View Demo</a>
-    ·
-    <a href="https://github.com/yourusername/bizconnect/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/yourusername/bizconnect/issues">Request Feature</a>
-  </p>
-</div>
+> Single-page application frontend for Bizz Connect, a CRM-style business networking platform. Built solo end-to-end: UX design, component architecture, state management, API integration, and deployment.
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [About](#about)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Getting Started](#getting-started)
+- [Project Overview](#project-overview)
+- [Tech Stack](#tech-stack)
+- [System Architecture](#system-architecture)
+- [Modules & Features](#modules--features)
+- [My Role](#my-role)
+- [Notable Implementations](#notable-implementations)
 - [Project Structure](#project-structure)
-- [API Integration](#api-integration)
-- [Usage Guide](#usage-guide)
+- [Installation & Setup](#installation--setup)
 - [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
 
 ---
 
-## 🎯 About
+## Project Overview
 
-**BizConnect** is a comprehensive business contact management system designed to help professionals, entrepreneurs, and businesses efficiently organize and maintain their network of contacts, clients, and partners. With powerful features like smart tagging, automated reminders, and digital business cards, BizConnect streamlines relationship management and helps you stay connected with what matters most.
+**What it does:**
+Bizz Connect is a bilingual (Vietnamese/English) business contact management and networking web application. The frontend provides a full CRM interface: contact management with search/tagging/import/export, reminder scheduling, digital business card creation with OCR scanning, company profile management, an in-app notification center, and a bilingual AI assistant with SSE streaming.
 
-### Why BizConnect?
+**Target market:**
+Vietnamese professionals, freelancers, entrepreneurs, and SMEs who need a lightweight CRM with digital card exchange and AI assistant capabilities.
 
-- **🚀 Modern & Fast**: Built with cutting-edge technologies for optimal performance
-- **📱 Responsive Design**: Works seamlessly across all devices
-- **🎨 Beautiful UI**: Intuitive interface with smooth animations
-- **🔒 Secure**: Enterprise-grade security with JWT authentication
-- **📊 Insightful**: Comprehensive dashboard with actionable insights
-- **🔄 Import/Export**: Easy data migration with Excel/CSV support
+**Current status:**
+Production-deployed on Render.com (`bizz-connect-web.onrender.com`). Custom domain `biz-connect.online`. Connects to Laravel backend at `http://127.0.0.1:8000/api` (dev) or the production API URL.
 
 ---
 
-## ✨ Features
+## Tech Stack
 
-### Core Features
+| Layer | Technology | Version / Notes |
+|-------|-----------|----------------|
+| UI Library | React | 19.1.1 |
+| Language | TypeScript | 5.8.3 |
+| Build Tool | Vite | 6.x — sub-second HMR |
+| Styling | Tailwind CSS | 4.x (PostCSS plugin) |
+| State Management | Redux Toolkit | 2.9.0 |
+| React-Redux | react-redux | 9.2.0 |
+| Routing | React Router DOM | 7.8.2 (Data Router) |
+| HTTP Client | Axios (services) + native fetch (lib) | Axios 1.11.0 |
+| Animations | Framer Motion | 12.x |
+| Icons | Lucide React + Heroicons | 0.544.0 + 2.2.0 |
+| OCR | Tesseract.js | 7.0.0 — client-side OCR |
+| Package Manager | Yarn | 4.12.0 |
+| Linting | ESLint | 9.x |
 
-#### 👥 Contact Management
-- **CRUD Operations**: Create, read, update, and delete contacts with ease
-- **Advanced Search**: Search by name, email, company, or phone number
-- **Smart Filtering**: Filter contacts by tags, creation date, or custom criteria
-- **Bulk Operations**: Import/export contacts via Excel or CSV
-- **Rich Profiles**: Store comprehensive contact information including:
-  - Personal details (name, email, phone)
-  - Professional info (job title, company)
-  - Social links (LinkedIn, website)
-  - Custom notes
-  - Full address (Country → State → City)
-
-#### 🏷️ Smart Tagging System
-- Create unlimited custom tags
-- Assign multiple tags to contacts
-- Filter contacts by single or multiple tags
-- View contact count per tag
-- Bulk tag operations
-- Tag-based contact grouping
-
-#### ⏰ Reminder Management
-- Set follow-up reminders for contacts
-- Multiple contacts per reminder support
-- Flexible scheduling with date/time picker
-- Status tracking (Pending, Done, Skipped, Cancelled)
-- Overdue reminder notifications
-- Bulk reminder operations
-- Primary contact designation
-
-#### 🔔 Smart Notifications
-- Real-time notification system
-- Categorized notifications (unread, read, upcoming, past)
-- In-app notification center
-- Direct navigation to related contacts/reminders
-- Bulk mark as read
-- Notification history
-
-#### 📇 Digital Business Card
-- Create personalized digital business card
-- Public sharing with unique URL
-- View count tracking
-- QR code integration (coming soon)
-- Link to company profile
-- Customizable visibility (public/private)
-- Professional card design
-
-#### 🏢 Company Profile Management
-- Comprehensive company information
-- Logo upload support
-- Business address management
-- Company-wide settings
-- Contact linking to company
-
-#### 📊 Analytics Dashboard
-- Contact statistics overview
-- Active reminders count
-- Recent activity feed
-- Partnership growth metrics
-- Quick action shortcuts
-- Visual data representation
-
-### Additional Features
-
-- **🔐 Authentication System**
-  - Secure registration and login
-  - Email verification
-  - Password reset with OTP
-  - Session management
-  - Remember me functionality
-
-- **🌍 Location Management**
-  - Hierarchical address system (Country → State → City)
-  - International support
-  - Auto-populated location dropdowns
-
-- **📤 Data Management**
-  - Excel import with template
-  - CSV export with custom fields
-  - Bulk data operations
-  - Data validation
-
-- **🎨 User Experience**
-  - Smooth page transitions
-  - Loading state indicators
-  - Toast notifications
-  - Empty state designs
-  - Error handling
-  - Mobile-optimized interface
+No component library (Material UI, shadcn, Radix, etc.) — all UI components are custom-built with Tailwind CSS.
 
 ---
 
-## 🚀 Technology Stack
+## System Architecture
 
-### Frontend
-| Technology | Purpose |
-|------------|---------|
-| React 18.x | UI Library with latest features |
-| TypeScript 5.x | Type-safe development |
-| Vite 5.x | Lightning-fast build tool |
-| TailwindCSS 3.x | Utility-first CSS framework |
-| React Router v6 | Client-side routing |
-| Redux Toolkit | State management |
-| Framer Motion | Smooth animations |
-| Lucide React | Beautiful icon set |
-| Axios | HTTP client |
-
-### Backend Integration
-- RESTful API architecture
-- JWT token authentication
-- Laravel backend (separate repository)
-- Real-time notifications
-
-### Development Tools
-- ESLint for code quality
-- Prettier for code formatting
-- TypeScript for type checking
-- Git for version control
-
----
-
-## 🏁 Getting Started
-
-### Prerequisites
-
-Before you begin, ensure you have the following installed:
-- **Node.js** (v18.x or higher) - [Download](https://nodejs.org/)
-- **npm** (v9.x or higher) or **yarn** (v1.22.x or higher)
-- **Git** - [Download](https://git-scm.com/)
-
-### Installation
-
-1. **Clone the repository**
-```bash
-   git clone https://github.com/yourusername/bizconnect.git
-   cd bizconnect
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     React SPA (Vite)                        │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │                    App.tsx (Router)                   │  │
+│  │  GuestRoute → /auth                                   │  │
+│  │  VerifyOnlyRoute → /verify-email, /reset-verify       │  │
+│  │  VerifiedRoute → /dashboard, /contacts, /tags,        │  │
+│  │                  /reminders, /notifications, /settings │  │
+│  │  Public → /card/:slug                                  │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│  ┌─────────────────┐    ┌──────────────────────────────┐  │
+│  │   Redux Store   │    │         Pages Layer           │  │
+│  │  authSlice.ts   │    │  Dashboard, Contacts, Tags,   │  │
+│  │  token + user   │    │  Reminders, Notifications,    │  │
+│  │  (localStorage) │    │  Settings, AuthPortal,        │  │
+│  └─────────────────┘    │  PublicBusinessCard           │  │
+│                          └──────────────────────────────┘  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                  Services Layer                      │   │
+│  │  auth.ts  contacts.ts  reminders.ts  tags.ts         │   │
+│  │  notifications.ts  businessCard.ts  company.ts       │   │
+│  │  location.ts                                         │   │
+│  └──────────────────────┬──────────────────────────────┘   │
+│                          │                                   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │               HTTP Layer (src/lib/api.ts)            │   │
+│  │  apiFetch()  — native fetch + Bearer injection       │   │
+│  │  apiFetchBlob() — binary file download               │   │
+│  └──────────────────────┬──────────────────────────────┘   │
+└───────────────────────── │ ──────────────────────────────────┘
+                           │ HTTPS + Authorization: Bearer <token>
+                           ▼
+                  Laravel 11 Backend API
 ```
 
-2. **Install dependencies**
-```bash
-   npm install
-   # or if you prefer yarn
-   yarn install
+### Route Guard Architecture
+
 ```
-
-3. **Set up environment variables**
-   
-   Create a `.env` file in the root directory:
-```bash
-   cp .env.example .env
-```
-
-   Edit the `.env` file with your configuration:
-```env
-   VITE_API_BASE_URL=http://localhost:8000/api
-```
-
-4. **Start the development server**
-```bash
-   npm run dev
-   # or
-   yarn dev
-```
-
-   The application will be available at `http://localhost:5173`
-
-5. **Build for production** (optional)
-```bash
-   npm run build
-   # or
-   yarn build
-```
-
-   The production-ready files will be in the `dist/` directory.
-
-### Quick Start Commands
-```bash
-# Development
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run preview      # Preview production build
-
-# Code Quality
-npm run lint         # Run ESLint
-npm run format       # Format code with Prettier
-npm run type-check   # Run TypeScript checks
-
-# Testing
-npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Generate coverage report
+/auth           ← GuestRoute     (redirect to /dashboard if authenticated)
+/verify-email   ← VerifyOnlyRoute (token present but email not verified)
+/reset-verify   ← VerifyOnlyRoute
+/verify-success ← public
+/dashboard      ← VerifiedRoute  (token + verified email required)
+/contacts       ← VerifiedRoute
+/contacts/:id   ← VerifiedRoute  (opens contact detail modal)
+/tags           ← VerifiedRoute
+/reminders      ← VerifiedRoute
+/notifications  ← VerifiedRoute
+/settings       ← VerifiedRoute
+/card/:slug     ← public (no auth — shareable business card)
+*               ← NotFound
 ```
 
 ---
 
-## 🗂️ Project Structure
-```
-bizconnect/
-├── public/                 # Static assets
-│   ├── bizzconnect.png    # Logo
-│   └── config.js          # Runtime config
-├── src/
-│   ├── components/        # React components
-│   │   ├── auth/         # Authentication components
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── SignupForm.tsx
-│   │   │   └── ForgotForm.tsx
-│   │   ├── contacts/     # Contact management
-│   │   │   ├── ContactList.tsx
-│   │   │   ├── ContactCard.tsx
-│   │   │   ├── ContactDetail.tsx
-│   │   │   ├── EditContactSheet.tsx
-│   │   │   ├── ImportContactsModal.tsx
-│   │   │   └── ExportContactsModal.tsx
-│   │   ├── reminders/    # Reminder components
-│   │   │   ├── ReminderTable.tsx
-│   │   │   ├── ReminderFormModal.tsx
-│   │   │   └── ReminderFilters.tsx
-│   │   ├── tags/         # Tag management
-│   │   │   ├── TagEditModal.tsx
-│   │   │   └── TagContactsDrawer.tsx
-│   │   ├── settings/     # Settings components
-│   │   │   ├── BusinessCardSettings.tsx
-│   │   │   ├── CompanySettings.tsx
-│   │   │   └── CountrySelect.tsx
-│   │   ├── ui/           # Reusable UI components
-│   │   │   ├── Toast.tsx
-│   │   │   └── Pagination.tsx
-│   │   └── AppNav.tsx    # Main navigation
-│   ├── features/         # Redux slices
-│   │   └── auth/
-│   │       └── authSlice.ts
-│   ├── hooks/            # Custom React hooks
-│   │   ├── useDebounced.ts
-│   │   └── useMediaQuery.ts
-│   ├── lib/              # Utility libraries
-│   │   ├── api.ts        # API helper functions
-│   │   └── config.ts     # App configuration
-│   ├── pages/            # Page components
-│   │   ├── AuthPortal.tsx
-│   │   ├── Dashboard.tsx
-│   │   ├── Contacts.tsx
-│   │   ├── Tags.tsx
-│   │   ├── Reminders.tsx
-│   │   ├── Notifications.tsx
-│   │   ├── Setting.tsx
-│   │   └── NotFound.tsx
-│   ├── services/         # API services
-│   │   ├── api.ts        # Axios instance
-│   │   ├── auth.ts       # Auth API
-│   │   ├── contacts.ts   # Contacts API
-│   │   ├── reminders.ts  # Reminders API
-│   │   ├── tags.ts       # Tags API
-│   │   ├── notifications.ts
-│   │   ├── businessCard.ts
-│   │   ├── company.ts
-│   │   └── location.ts
-│   ├── store.ts          # Redux store
-│   ├── App.tsx           # Root component
-│   ├── main.tsx          # Entry point
-│   └── index.css         # Global styles
-├── .env.example          # Environment template
-├── .eslintrc.json        # ESLint config
-├── .prettierrc           # Prettier config
-├── tsconfig.json         # TypeScript config
-├── vite.config.ts        # Vite config
-├── tailwind.config.js    # Tailwind config
-├── package.json          # Dependencies
-└── README.md            # This file
-```
+## Modules & Features
 
----
+### 1. Authentication & Session Management
 
-## 📡 API Integration
+Full auth flow with 4-tier route guards:
 
-### API Configuration
+- **Login** (`LoginForm.tsx`) — dispatches `loginThunk` → `POST /auth/login`; stores token in Redux + `localStorage['bc_token']`
+- **Registration** (`SignupForm.tsx`) — dispatches `registerThunk` → `POST /auth/register`; redirects to `/verify-email`
+- **Email Verification** — `VerifyEmail` page shows resend option; backend signed URL redirects to `/verify-success?email=...`
+- **Password Reset** (`ResetVerify.tsx`) — 3-step: request code → enter 6-digit code → new password
+- **Session Restore** — on app mount, `meThunk` calls `GET /auth/me` to restore user from stored token; 401/403 clears all state
+- **Logout** — clears `localStorage['bc_token']` + Redux state + calls `POST /auth/logout`
 
-The application communicates with a Laravel backend API. Configure the API base URL in your `.env` file:
-```env
-VITE_API_BASE_URL=http://localhost:8000/api
-```
-
-### Authentication Flow
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant API
-    
-    User->>Frontend: Enter credentials
-    Frontend->>API: POST /auth/login
-    API-->>Frontend: JWT Token
-    Frontend->>Frontend: Store token
-    Frontend->>API: GET /auth/me (with token)
-    API-->>Frontend: User data
-    Frontend->>User: Redirect to dashboard
-```
-
-### Main API Endpoints
-
-#### Authentication
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | /auth/register | Register new user | No |
-| POST | /auth/login | User login | No |
-| GET | /auth/me | Get current user | Yes |
-| POST | /auth/logout | User logout | Yes |
-| POST | /email/verification-notification | Resend verification email | Yes |
-| POST | /auth/password/request | Request password reset | No |
-| POST | /auth/password/verify | Verify reset code | No |
-
-#### Contacts
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /contacts | List all contacts | Yes |
-| POST | /contacts | Create new contact | Yes |
-| GET | /contacts/{id} | Get contact details | Yes |
-| PUT | /contacts/{id} | Update contact | Yes |
-| DELETE | /contacts/{id} | Delete contact | Yes |
-| GET | /contacts/export | Export contacts | Yes |
-| POST | /contacts/import | Import contacts | Yes |
-| GET | /contacts/export-template | Download template | Yes |
-
-#### Tags
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /tags | List all tags | Yes |
-| POST | /tags | Create new tag | Yes |
-| PUT | /tags/{id} | Update tag | Yes |
-| DELETE | /tags/{id} | Delete tag | Yes |
-| POST | /contacts/{id}/tags | Attach tags to contact | Yes |
-| DELETE | /contacts/{contactId}/tags/{tagId} | Detach tag | Yes |
-
-#### Reminders
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /reminders | List reminders | Yes |
-| POST | /reminders | Create reminder | Yes |
-| GET | /reminders/{id} | Get reminder details | Yes |
-| PATCH | /reminders/{id} | Update reminder | Yes |
-| DELETE | /reminders/{id} | Delete reminder | Yes |
-| POST | /reminders/{id}/done | Mark as done | Yes |
-| POST | /reminders/bulk-status | Bulk status update | Yes |
-| POST | /reminders/bulk-delete | Bulk delete | Yes |
-| GET | /reminders/pivot | List reminder-contact edges | Yes |
-
-#### Notifications
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /notifications | List notifications | Yes |
-| POST | /notifications/{id}/read | Mark as read | Yes |
-| POST | /notifications/bulk-read | Bulk mark as read | Yes |
-| DELETE | /notifications/{id} | Delete notification | Yes |
-
-#### Business Card
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /business-card | Get user's card | Yes |
-| POST | /business-card | Create/update card | Yes |
-| DELETE | /business-card | Delete card | Yes |
-| GET | /business-card/public/{slug} | View public card | No |
-
-#### Company
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /company | Get user's company | Yes |
-| POST | /company | Create/update company | Yes |
-| DELETE | /company | Delete company | Yes |
-
-#### Location
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /countries | List countries | Yes |
-| GET | /countries/{code}/states | List states | Yes |
-| GET | /states/{code}/cities | List cities | Yes |
-
-### Request/Response Examples
-
-#### Login Request
-```javascript
-POST /auth/login
-Content-Type: application/json
-
+Redux `authSlice` state:
+```typescript
 {
-  "email": "user@example.com",
-  "password": "password123"
+  token: string | null,       // persisted in localStorage['bc_token']
+  user: User | null,          // { id, name, email, email_verified_at }
+  verified: boolean | null,
+  status: 'idle' | 'loading' | 'failed',
+  error?: string
 }
 ```
 
-#### Login Response
-```javascript
-{
-  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "user@example.com",
-    "email_verified_at": "2024-01-01T00:00:00.000000Z"
-  },
-  "verified": true
-}
-```
-
-#### Create Contact Request
-```javascript
-POST /contacts
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "name": "Jane Smith",
-  "email": "jane@example.com",
-  "phone": "+1234567890",
-  "company": "Tech Corp",
-  "job_title": "Software Engineer",
-  "notes": "Met at conference",
-  "linkedin_url": "https://linkedin.com/in/janesmith",
-  "address_detail": "123 Main St",
-  "country": "US",
-  "state": "CA",
-  "city": "SF"
-}
-```
+Key files: `src/features/auth/authSlice.ts`, `src/pages/AuthPortal.tsx`, `src/components/auth/`
 
 ---
 
-## 📖 Usage Guide
+### 2. Contact Management (CRM Core)
 
-### Getting Started with BizConnect
+The largest and most complex module:
 
-#### 1. Account Setup
-1. Navigate to the application
-2. Click "Create account" on the auth page
-3. Fill in your details (name, email, password)
-4. Verify your email through the verification link sent
-5. Complete your profile in Settings
+**Contact List** (`Contacts.tsx` + `ContactList.tsx`):
+- Debounced search (`useDebounced(300ms)`) across name, company, email, phone
+- Inline hashtag tag filter: typing `#vip` in search automatically filters by tag name
+- Tag filter panel: multi-select with AND/OR mode toggle
+- Sort by name or creation date (ascending/descending)
+- Paginated list with `Pagination` component
+- Row-level selection for bulk delete
+- Click-to-open contact detail modal (`ContactDetailModal.tsx`) at `/contacts/:id`
 
-#### 2. Adding Your First Contact
-1. Go to the Contacts page
-2. Click the "New" button
-3. Fill in contact information:
-   - Required: Name
-   - Optional: Email, phone, company, job title, notes, social links, address
-4. Add relevant tags for easy filtering
-5. Click "Save"
+**Contact Detail Modal** (`ContactDetail.tsx`):
+- Full contact info display: avatar, name, company, job title, email, phone, address, social links, notes
+- Tag pills with inline add/remove
+- Linked reminders list
+- Edit and delete actions
 
-#### 3. Organizing with Tags
-1. Navigate to the Tags page
-2. Click "New Tag"
-3. Enter a tag name (e.g., "Client", "Partner", "Warm Lead")
-4. Assign tags to contacts from the contact detail page
-5. Filter contacts by tags on the Contacts page
+**Edit Contact Sheet** (`EditContactSheet.tsx`):
+- Slide-in sheet (not a modal) for create/edit to preserve list context
+- Two tabs: **Manual Entry** (form fields) and **Scan Card** (OCR upload)
+- Cascading address dropdowns: Country → State → City (each loads on prior selection)
+- Avatar upload with preview
+- Business card photo upload (front/back) with drag-and-drop
 
-#### 4. Setting Up Reminders
-1. Go to the Reminders page
-2. Click "New Reminder"
-3. Select one or more contacts
-4. Set a title and optional note
-5. Choose a due date and time
-6. Save the reminder
-7. Receive notifications when reminders are due
+**OCR Scan Tab (in EditContactSheet):**
+- User uploads a business card image
+- Client-side `ocrImage()` runs Tesseract.js in English mode with progress callback
+- Raw text sent to `POST /api/business-card/extract` for regex-based field extraction
+- Extracted fields auto-fill the contact form
 
-#### 5. Creating Your Business Card
-1. Navigate to Settings
-2. Scroll to the Business Card section
-3. Fill in your professional details
-4. Upload a profile photo (optional)
-5. Toggle "Make card public" to enable sharing
-6. Copy your unique card URL to share with others
+**Import Contacts** (`ImportContactsModal.tsx`):
+- Drag-and-drop file upload (XLSX or CSV)
+- Template download button (`GET /api/contacts/export-template`)
+- Match-by selector: `id`, `email`, or `phone`
+- After import: displays summary card — `{ created, updated, skipped, errors[] }`
 
-#### 6. Import/Export Contacts
-**Importing:**
-1. Download the template from the Import modal
-2. Fill in your contact data
-3. Upload the file
-4. Choose match criteria (by ID, email, or phone)
-5. Review the import summary
+**Export Contacts** (`ExportContactsModal.tsx`):
+- Format selector: XLSX or CSV
+- Scope: all contacts, or with current search/tag filters applied
+- Triggers `apiFetchBlob()` → browser file download
 
-**Exporting:**
-1. Apply filters/search if needed
-2. Click "Export"
-3. Choose format (Excel or CSV)
-4. Select export scope (all, current page, or selected)
-5. Download the file
+**Bulk Delete:**
+- Select contacts via checkboxes → `POST /api/contacts/bulk-delete`
 
-### Tips & Best Practices
-
-- **Use Tags Strategically**: Create tags that align with your business processes (e.g., Lead Stage, Industry, Priority)
-- **Set Regular Reminders**: Schedule follow-ups to maintain relationships
-- **Keep Notes Updated**: Add context to each interaction for better tracking
-- **Utilize Search**: Use the powerful search to quickly find contacts
-- **Regular Backups**: Export your contacts periodically as backup
-- **Clean Data**: Remove duplicate or outdated contacts regularly
+Key files: `src/pages/Contacts.tsx`, `src/components/contacts/`, `src/services/contacts.ts`
 
 ---
 
-## 🚢 Deployment
+### 3. Tag System
 
-### Build for Production
-```bash
-npm run build
-```
+User-owned labels with full management UI:
 
-This creates an optimized production build in the `dist/` directory.
+- **Tag List** (`Tags.tsx`): all tags displayed with contact count
+- **Create Tag**: inline form, dispatches `POST /api/tags`
+- **Rename Tag** (`TagEditModal.tsx`): modal with current name pre-filled
+- **Delete Tag**: with confirmation dialog
+- **TagContactsDrawer** (`TagContactsDrawer.tsx`): slide-in drawer showing all contacts under a tag; supports removing contacts from the tag inline
+- **Tag Filter on Contacts page**: multi-select tag filter with AND/OR toggle
+- **Inline Tag Attach** on contact detail: type or search tag name → attach or create-on-the-fly
+- **Tag Pills** (`TagPill.tsx`): reusable badge component used across contact cards and detail views
 
-### Deploy to Vercel
-
-1. Install Vercel CLI:
-```bash
-   npm install -g vercel
-```
-
-2. Deploy:
-```bash
-   vercel --prod
-```
-
-3. Set environment variables in Vercel dashboard:
-   - `VITE_API_BASE_URL`: Your production API URL
-
-### Deploy to Netlify
-
-1. Install Netlify CLI:
-```bash
-   npm install -g netlify-cli
-```
-
-2. Build the project:
-```bash
-   npm run build
-```
-
-3. Deploy:
-```bash
-   netlify deploy --prod --dir=dist
-```
-
-4. Set environment variables in Netlify dashboard
-
-### Deploy to AWS S3 + CloudFront
-
-1. Build the project:
-```bash
-   npm run build
-```
-
-2. Upload `dist/` contents to S3 bucket
-
-3. Configure CloudFront distribution
-
-4. Set up Route53 for custom domain
-
-### Environment Variables for Production
-```env
-VITE_API_BASE_URL=https://api.yourdomain.com/api
-```
-
-### Performance Optimization
-
-The production build includes:
-- Code splitting
-- Tree shaking
-- Minification
-- Gzip compression
-- Image optimization
-- Lazy loading
+Key files: `src/pages/Tags.tsx`, `src/components/tags/`, `src/services/tags.ts`
 
 ---
 
-## 🧪 Testing
+### 4. Reminder Management
 
-### Running Tests
-```bash
-# Run all tests
-npm run test
+Multi-contact follow-up reminders with two views:
 
-# Run tests in watch mode
-npm run test:watch
+**Standard Table View** (`ReminderTable.tsx`):
+- Sortable table: title, contacts, due date, status, channel
+- Status badges: Pending, Done, Skipped, Cancelled (color-coded)
+- Overdue detection (past due + still pending)
+- Row selection for bulk actions (bulk status update, bulk delete)
+- Mark done per row
+- Click to open edit modal
 
-# Generate coverage report
-npm run test:coverage
+**Pivot Table View** (`ReminderPivotTable.tsx`):
+- Fetches `GET /api/reminders/pivot` — paginated join of `contact_reminder` × `reminders` × `contacts`
+- Shows each contact-reminder edge as a row: who the reminder is about, reminder title, due date, is_primary flag
+- Useful for seeing "all reminders attached to a specific person" across the full list
 
-# Run E2E tests
-npm run test:e2e
-```
+**Reminder Form Modal** (`ReminderFormModal.tsx`):
+- Title, note, due date + time picker
+- Channel selector: App, Email, Calendar
+- Multi-contact picker: search and select multiple contacts (`SelectContactsModal.tsx`)
+- Shows currently attached contacts with detach button
 
-### Test Structure
+**Filters** (`ReminderFilters.tsx`):
+- Status filter (all, pending, done, skipped, cancelled)
+- Date range (after / before)
+- Overdue toggle
+- Contact ID filter (from contact detail view)
+
+Key files: `src/pages/Reminders.tsx`, `src/components/reminders/`, `src/services/reminders.ts`
+
+---
+
+### 5. In-App Notifications
+
+Notification inbox with scoped views:
+
+- Scope tabs: **All**, **Unread**, **Upcoming**, **Past**
+- Per-notification actions: mark read, mark done, delete
+- Bulk mark-all-read
+- Notification badge count on nav icon (unread count)
+- Clicking a notification navigates to the related contact or reminder
+- Fetched on page load; no polling or WebSocket
+
+Key files: `src/pages/Notifications.tsx`, `src/services/notifications.ts`
+
+---
+
+### 6. Settings (Profile + Company + Business Card)
+
+Three-section settings page (`Setting.tsx`):
+
+**Profile Settings:**
+- Name, phone, locale, timezone fields
+- Avatar upload with preview (`PATCH /api/auth/me`)
+
+**Company Settings** (`CompanySettings.tsx`):
+- Company name, tax code, phone, email, website, description
+- Logo upload
+- Cascading address (Country → State → City)
+- Upsert on save (`POST /api/company`)
+
+**Business Card Settings** (`BusinessCardSettings.tsx`):
+- Full professional card form: full name, job title, department, email, phone, mobile, website, LinkedIn, Facebook, Twitter
+- Image uploads: avatar, card front photo, card back photo, background image
+- **OCR Scan pipeline**: upload card image → Tesseract.js OCR → send raw text to `/api/business-card/extract` → auto-fill form fields
+- `is_public` toggle with shareable public URL display (`/card/:slug`)
+- **Card Preview** (`CardGenerator.tsx`): live visual rendering of the business card as the user fills in fields
+- Copy-to-clipboard for public URL
+- `view_count` display ("X views")
+
+Key files: `src/pages/Setting.tsx`, `src/components/settings/`
+
+---
+
+### 7. Digital Business Card (Public View)
+
+Public-facing shareable card page:
+
+- Route `/card/:slug` — no auth required
+- Fetches `GET /api/business-card/public/{slug}` (increments view count on backend)
+- Displays: avatar, name, job title, company, contact info, social links, card photos
+- "Connect" button: if logged in, calls `POST /api/business-card/connect/{slug}` to auto-create a Contact from the card owner's data
+- Accessible without login for sharing via URL or QR code
+
+Key files: `src/pages/PublicBusinessCard.tsx`, `src/services/businessCard.ts`
+
+---
+
+### 8. Dashboard
+
+Overview home screen (`Dashboard.tsx`):
+
+- **Stats cards**: total contacts, total tags, pending reminders, unread notifications (fetched in parallel with `Promise.all`)
+- **Recent Contacts**: last 5 contacts added
+- **Upcoming Reminders**: next pending reminders sorted by `due_at`
+- **Unread Notifications**: latest unread items with quick mark-read actions
+- **Quick Actions**: shortcuts to create contact, create reminder, open settings
+
+Key files: `src/pages/Dashboard.tsx`, `src/components/home/StatCard.tsx`, `src/components/home/QuickAction.tsx`
+
+---
+
+### 9. Location Cascading Selects
+
+Reusable location dropdowns used in contact forms, company settings, and business card settings:
+
+- `CountrySelect.tsx` → fetches `GET /api/countries` (runs once, cached in component state)
+- `StateSelect.tsx` → fetches `GET /api/countries/{code}/states` when country changes
+- `CitySelect.tsx` → fetches `GET /api/states/{code}/cities` when state changes
+- Each clears child selections when parent changes
+- Stores `code` value (not display name) for backend compatibility
+
+Key files: `src/components/settings/CountrySelect.tsx`, `StateSelect.tsx`, `CitySelect.tsx`
+
+---
+
+## My Role
+
+I designed and built this frontend **end-to-end, solo**, across all phases:
+
+| Phase | What I did |
+|-------|-----------|
+| **UX Design** | Designed all screens and user flows: auth portal, CRM list/detail pattern, settings multi-section layout, public business card page, pivot table view for reminders |
+| **Component Architecture** | Defined the component hierarchy: pages → feature components → reusable UI components; separated services layer from UI; established route guard pattern |
+| **State Management** | Implemented Redux Toolkit auth slice with async thunks for full auth lifecycle; chose local state (useState/useEffect) for all other modules to avoid over-engineering |
+| **HTTP Layer** | Built `apiFetch` and `apiFetchBlob` wrapper functions over native fetch with auto Bearer injection, FormData detection, and structured error extraction; separate Axios instance for services layer |
+| **API Integration** | Wrote all 9 service files (~50+ typed API functions) covering every backend endpoint |
+| **OCR Integration** | Integrated Tesseract.js v7 client-side OCR with progress reporting; designed the OCR → regex-extract → form-fill pipeline for business card scanning |
+| **Real-time AI Streaming** | Consumed the backend's SSE endpoint for AI guide streaming; implemented incremental rendering of typed events (title, description, step, tips, related) |
+| **TypeScript** | Defined all types inline in service files: Contact, Reminder, Tag, Notification, BusinessCard, Me, etc.; typed all Redux state and dispatch |
+| **Routing & Guards** | Implemented 4-tier route guard system: GuestRoute, ProtectedRoute, VerifiedRoute, VerifyOnlyRoute |
+| **Deployment** | Deployed to Render.com; configured `VITE_API_BASE_URL` for production; handled runtime config injection via `window.VITE_API_BASE_URL` fallback |
+
+---
+
+## Notable Implementations
+
+### 4-Tier Route Guard System
+Routes are protected at 4 distinct levels: unauthenticated (guest-only), token-present-but-unverified, fully authenticated+verified, and public. This prevents:
+- Authenticated users seeing the login page (GuestRoute redirects to dashboard)
+- Verified users getting stuck on /verify-email
+- Unverified users accessing CRM features and receiving confusing 403s
+
+### Client-Side OCR with Tesseract.js
+Business card scanning runs entirely in the browser using Tesseract.js v7. A Tesseract worker is created on demand, runs English OCR on the uploaded image, emits progress callbacks (0–100%) shown as a progress bar, then terminates. The raw text is sent to the backend for regex-based field extraction. No server-side image processing required for the OCR step.
+
+### SSE Streaming for AI Guide
+The AI guide consumes the backend's `text/event-stream` SSE endpoint using `fetch` with `response.body.getReader()`. The frontend parses each typed event (`start`, `title`, `description`, `step`, `tips`, `related`, `done` for KB answers; `chunk` for Gemini streaming) and renders content progressively — section by section as it arrives, not all at once.
+
+### Debounced Search with Hashtag Parsing
+The contact search input is debounced 300ms via `useDebounced`. Before sending the query to the API, the frontend parses inline `#hashtags` from the search string, extracts them as tag names, and passes them separately as `tags[]=vip&tags[]=client` query parameters alongside the remaining text query. This lets users do natural combined text+tag search in a single input field.
+
+### `apiFetch` + `apiFetchBlob` HTTP Abstraction
+Rather than scattering `Authorization` header logic across every API call, a thin `apiFetch` wrapper reads `bc_token` from `localStorage` and injects the Bearer header automatically. For FormData uploads it detects the body type and skips setting `Content-Type` (allowing the browser to set the correct `multipart/form-data` boundary). `apiFetchBlob` handles binary responses (Excel/CSV downloads) and triggers a browser `<a>` download programmatically.
+
+### Pivot Table View for Reminders
+The standard reminder view shows reminders as rows. The pivot view calls `GET /api/reminders/pivot` which returns a custom paginated JOIN of `contact_reminder × reminders × contacts`. This renders as a table of contact-reminder edges — useful for seeing all reminders associated with a specific person across the full dataset, without needing to open each contact individually.
+
+### Cascading Location Selects
+Country → State → City dropdowns are implemented as three independent components that communicate via controlled value props. Each child component clears its own value and child value when its parent selection changes. The Country list is fetched once on mount; State and City lists are fetched on-demand when the parent code changes, minimizing unnecessary API calls.
+
+### Runtime API URL Override
+`src/lib/config.ts` resolves the API base URL from multiple sources in priority order: `import.meta.env.VITE_API_BASE_URL` (Vite), `process.env.NEXT_PUBLIC_API_BASE_URL` (Next.js compat), `process.env.REACT_APP_API_BASE_URL` (CRA compat), and finally `window.VITE_API_BASE_URL` (runtime injection via `public/config.js`). This allows the production deployment to override the URL without rebuilding the bundle.
+
+---
+
+## Project Structure
+
 ```
 src/
+├── App.tsx                     Root router with all route guards
+├── main.tsx                    Vite entry point
+├── store.ts                    Redux store (authSlice only)
+├── index.css                   Tailwind CSS base
+│
+├── features/
+│   └── auth/
+│       └── authSlice.ts        Redux: token, user, verified + async thunks
+│
+├── pages/
+│   ├── AuthPortal.tsx          Login + Register combined (GuestRoute)
+│   ├── Dashboard.tsx           Stats, recent contacts, upcoming reminders
+│   ├── Contacts.tsx            CRM list with search/filter/modal detail
+│   ├── Tags.tsx                Tag CRUD + contact management per tag
+│   ├── Reminders.tsx           Table + pivot table view + CRUD
+│   ├── Notifications.tsx       Notification inbox with scopes
+│   ├── Setting.tsx             Profile + Company + Business Card settings
+│   ├── PublicBusinessCard.tsx  Public /card/:slug view
+│   ├── VerifyEmail.tsx         Email verification pending
+│   ├── VerifySuccess.tsx       Post-verification success
+│   ├── ResetVerify.tsx         Password reset code entry
+│   └── NotFound.tsx            404
+│
 ├── components/
-│   └── __tests__/
-│       ├── ContactCard.test.tsx
-│       └── LoginForm.test.tsx
-├── services/
-│   └── __tests__/
-│       └── api.test.ts
-└── hooks/
-    └── __tests__/
-        └── useDebounced.test.ts
-```
-
-### Writing Tests
-
-Example test for a component:
-```typescript
-import { render, screen } from '@testing-library/react';
-import ContactCard from '../ContactCard';
-
-describe('ContactCard', () => {
-  it('renders contact name', () => {
-    const contact = {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com'
-    };
-    
-    render(<ContactCard contact={contact} />);
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-  });
-});
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   ├── SignupForm.tsx
+│   │   └── ForgotForm.tsx
+│   ├── contacts/
+│   │   ├── ContactList.tsx         Paginated list with selection
+│   │   ├── ContactCard.tsx         Single contact card display
+│   │   ├── ContactDetail.tsx       Full detail view
+│   │   ├── ContactDetailModal.tsx  Modal wrapper for detail
+│   │   ├── EditContactSheet.tsx    Slide-in create/edit + OCR tab
+│   │   ├── ContactTagManager.tsx   Tag attach/detach on contact
+│   │   ├── ExportContactsModal.tsx Export dialog
+│   │   ├── ImportContactsModal.tsx Import with drag-drop + summary
+│   │   └── SelectContactsModal.tsx Multi-contact picker
+│   ├── reminders/
+│   │   ├── ReminderTable.tsx       Standard sortable table
+│   │   ├── ReminderPivotTable.tsx  Contact×Reminder edge table
+│   │   ├── ReminderFormModal.tsx   Create/edit modal
+│   │   └── ReminderFilters.tsx     Filter bar
+│   ├── tags/
+│   │   ├── TagPill.tsx             Reusable tag badge
+│   │   ├── TagEditModal.tsx        Rename modal
+│   │   └── TagContactsDrawer.tsx   Contacts-in-tag slide-in drawer
+│   ├── settings/
+│   │   ├── BusinessCardSettings.tsx  Card form + OCR + preview
+│   │   ├── CompanySettings.tsx       Company profile form
+│   │   ├── CardGenerator.tsx         Live card visual preview
+│   │   ├── CountrySelect.tsx
+│   │   ├── StateSelect.tsx
+│   │   └── CitySelect.tsx
+│   ├── home/
+│   │   ├── StatCard.tsx
+│   │   └── QuickAction.tsx
+│   ├── ui/
+│   │   ├── Toast.tsx               Toast notification system + useToast hook
+│   │   ├── ConfirmDialog.tsx        Reusable confirmation dialog
+│   │   ├── Pagination.tsx
+│   │   └── Section.tsx
+│   ├── AppNav.tsx                  Main sidebar navigation
+│   ├── ProtectedRoute.tsx          Requires token
+│   ├── VerifiedRoute.tsx           Requires token + verified email
+│   ├── VerifyOnlyRoute.tsx         Token-present, unverified only
+│   └── GuestRoute.tsx              Redirects away if authenticated
+│
+├── services/                   One file per API domain
+│   ├── api.ts                  Axios instance + Bearer interceptor
+│   ├── auth.ts                 login, register, me, updateMe, password reset
+│   ├── contacts.ts             CRUD, import, export, avatar, card images, bulk ops
+│   ├── reminders.ts            CRUD, bulk ops, pivot, contact attach/detach
+│   ├── tags.ts                 CRUD, contact attach/detach
+│   ├── notifications.ts        list, read, done, bulk read, delete
+│   ├── businessCard.ts         CRUD, public view, connect, extract OCR
+│   ├── company.ts              CRUD
+│   └── location.ts             countries, states, cities
+│
+├── lib/
+│   ├── api.ts                  apiFetch / apiFetchBlob (native fetch wrappers)
+│   ├── auth-token.ts           get/set token in localStorage
+│   ├── config.ts               VITE_API_BASE_URL resolver (multi-source)
+│   └── ocr.ts                  Tesseract.js worker lifecycle + ocrImage()
+│
+├── hooks/
+│   ├── useDebounced.ts         Debounce any value (default 300ms)
+│   └── useMediaQuery.ts        Reactive window.matchMedia
+│
+└── utils/
+    └── hooks.ts                useAppDispatch / useAppSelector (typed)
 ```
 
 ---
 
-## 🤝 Contributing
+## Installation & Setup
 
-We love contributions! Here's how you can help make BizConnect better:
+### Requirements
 
-### How to Contribute
+- Node.js 18+
+- Yarn 4+ (`corepack enable`)
 
-1. **Fork the repository**
+### Steps
+
 ```bash
-   git clone https://github.com/yourusername/bizconnect.git
+git clone <repo-url>
+cd bizz_connect_web
+
+yarn install
+
+cp .env.example .env
+# Edit .env:
+# VITE_API_BASE_URL=http://127.0.0.1:8000/api
+
+yarn dev
+# Vite dev server at http://localhost:5173
 ```
 
-2. **Create a feature branch**
+### Available Commands
+
 ```bash
-   git checkout -b feature/AmazingFeature
+yarn dev        # Start Vite dev server (HMR)
+yarn build      # TypeScript check + production build → dist/
+yarn preview    # Preview production build
+yarn lint       # ESLint
 ```
 
-3. **Make your changes**
-   - Write clean, documented code
-   - Follow the existing code style
-   - Add tests for new features
-   - Update documentation as needed
+### Environment Variables
 
-4. **Commit your changes**
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+---
+
+## Deployment
+
+**Hosted on:** Render.com (static site)
+
+**Build command:**
 ```bash
-   git commit -m 'Add some AmazingFeature'
+yarn build
 ```
 
-5. **Push to your branch**
-```bash
-   git push origin feature/AmazingFeature
+**Publish directory:** `dist/`
+
+**Environment variable on Render:**
+```
+VITE_API_BASE_URL=https://api.biz-connect.online/api
 ```
 
-6. **Open a Pull Request**
-   - Describe your changes clearly
-   - Reference any related issues
-   - Wait for review and feedback
+**Runtime override** (alternative to rebuild): inject `window.VITE_API_BASE_URL` in `public/config.js` — the app reads this as fallback if the Vite env var is not set at build time.
 
-### Coding Guidelines
-
-- **TypeScript**: Use TypeScript for all new code
-- **Components**: Create reusable, single-purpose components
-- **Styling**: Use TailwindCSS utility classes
-- **State Management**: Use Redux for global state, React hooks for local state
-- **API Calls**: Use the service layer, don't call APIs directly in components
-- **Error Handling**: Always handle errors gracefully with user-friendly messages
-- **Accessibility**: Ensure all interactive elements are keyboard accessible
-
-### Code Style
-
-- Follow ESLint and Prettier configurations
-- Use meaningful variable and function names
-- Write self-documenting code
-- Add comments for complex logic
-- Keep functions small and focused
-
-### Pull Request Checklist
-
-- [ ] Code follows project style guidelines
-- [ ] Tests added/updated and passing
-- [ ] Documentation updated
-- [ ] No console errors or warnings
-- [ ] Responsive design tested
-- [ ] Accessibility checked
-- [ ] Performance impact considered
-
----
-
-## 🐛 Bug Reports
-
-Found a bug? Please open an issue with:
-- Clear description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots (if applicable)
-- Browser/device information
-
----
-
-## 💡 Feature Requests
-
-Have an idea? We'd love to hear it! Open an issue with:
-- Clear description of the feature
-- Use case and benefits
-- Proposed implementation (if any)
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
-MIT License
-
-Copyright (c) 2024 BizConnect
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-## 👥 Team
-
-- **Lead Developer**: [Your Name](https://github.com/yourusername)
-- **UI/UX Designer**: [Designer Name]
-- **Backend Developer**: [Backend Dev Name]
-- **Project Manager**: [PM Name]
-
----
-
-## 📧 Contact & Support
-
-### Get in Touch
-
-- **Email**: support@bizconnect.com
-- **Website**: [www.bizconnect.com](https://www.bizconnect.com)
-- **GitHub Issues**: [Report a bug](https://github.com/yourusername/bizconnect/issues)
-- **GitHub Discussions**: [Ask a question](https://github.com/yourusername/bizconnect/discussions)
-- **Twitter**: [@bizconnect](https://twitter.com/bizconnect)
-- **LinkedIn**: [BizConnect](https://linkedin.com/company/bizconnect)
-
-### Support
-
-- 📚 **Documentation**: [Wiki](https://github.com/yourusername/bizconnect/wiki)
-- 💬 **Community**: [Discord Server](https://discord.gg/bizconnect)
-- ❓ **FAQ**: [Frequently Asked Questions](https://github.com/yourusername/bizconnect/wiki/FAQ)
-
----
-
-## 🙏 Acknowledgments
-
-Special thanks to:
-
-- [React Team](https://reactjs.org/) for the amazing framework
-- [Vite](https://vitejs.dev/) for the blazing-fast build tool
-- [TailwindCSS](https://tailwindcss.com/) for the utility-first CSS framework
-- [Lucide](https://lucide.dev/) for the beautiful icons
-- [Framer Motion](https://www.framer.com/motion/) for smooth animations
-- [Laravel](https://laravel.com/) for the robust backend framework
-- All our contributors and supporters
-
----
-
-## 🗺️ Roadmap
-
-### Version 1.1 (Q1 2024)
-- [ ] Dark mode support
-- [ ] Multi-language support (i18n)
-- [ ] Advanced filtering options
-- [ ] Contact merge functionality
-- [ ] Duplicate detection
-
-### Version 1.2 (Q2 2024)
-- [ ] Calendar integration (Google Calendar, Outlook)
-- [ ] Email integration (Gmail, Outlook)
-- [ ] Contact groups/lists
-- [ ] Custom fields for contacts
-- [ ] Activity timeline
-
-### Version 2.0 (Q3 2024)
-- [ ] Mobile app (React Native)
-- [ ] Team collaboration features
-- [ ] Advanced analytics dashboard
-- [ ] WhatsApp integration
-- [ ] Telegram integration
-- [ ] AI-powered contact suggestions
-- [ ] Automated follow-up recommendations
-
-### Version 2.1 (Q4 2024)
-- [ ] Video call integration
-- [ ] Voice notes for contacts
-- [ ] Advanced reporting
-- [ ] Export to PDF with templates
-- [ ] Contact scoring system
-
-### Future Considerations
-- [ ] CRM integration (Salesforce, HubSpot)
-- [ ] API for third-party integrations
-- [ ] Zapier integration
-- [ ] Browser extension
-- [ ] Desktop app (Electron)
-
----
-
-## 📊 Project Stats
-
-![GitHub stars](https://img.shields.io/github/stars/yourusername/bizconnect?style=social)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/bizconnect?style=social)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/bizconnect)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/yourusername/bizconnect)
-![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/bizconnect)
-![GitHub repo size](https://img.shields.io/github/repo-size/yourusername/bizconnect)
-
-
----
-
-## 📈 Performance Metrics
-
-- **Lighthouse Score**: 95+ (Performance, Accessibility, Best Practices, SEO)
-- **Bundle Size**: ~200KB gzipped
-- **First Contentful Paint**: <1.5s
-- **Time to Interactive**: <2.5s
-- **Total Blocking Time**: <200ms
-
----
-
-## 🔒 Security
-
-### Reporting Security Issues
-
-If you discover a security vulnerability, please email security@bizconnect.com instead of using the issue tracker.
-
-### Security Features
-
-- JWT token-based authentication
-- XSS protection
-- CSRF protection
-- Rate limiting
-- Input sanitization
-- Secure password hashing (bcrypt)
-- HTTPS enforced in production
-- Regular security audits
-
----
-
-## 🌐 Browser Support
-
-| Browser | Version |
-|---------|---------|
-| Chrome | Latest 2 versions ✅ |
-| Firefox | Latest 2 versions ✅ |
-| Safari | Latest 2 versions ✅ |
-| Edge | Latest 2 versions ✅ |
-| Opera | Latest 2 versions ✅ |
-
-### Mobile Support
-
-- iOS Safari 14+ ✅
-- Android Chrome 90+ ✅
-- Samsung Internet 14+ ✅
-
----
-
-## 📚 Additional Resources
-
-- **Video Tutorial**: [Getting Started with BizConnect](https://youtube.com/watch?v=demo)
-- **Blog**: [Best Practices for Contact Management](https://blog.bizconnect.com)
-- **API Documentation**: [API Reference](https://api.bizconnect.com/docs)
-- **Change Log**: [CHANGELOG.md](CHANGELOG.md)
-
----
-
-<div align="center">
-  <p>
-    <strong>Made with ❤️ by the BizConnect Team</strong>
-  </p>
-  <p>
-    ⭐ If you find this project useful, please consider giving it a star!
-  </p>
-  <p>
-    <a href="#bizconnect---business-contact-management-system">Back to Top ↑</a>
-  </p>
-</div>
+**SPA routing:** Configure Render (or Nginx/Netlify/Vercel) to redirect all `/*` requests to `index.html` so React Router handles client-side routing.
