@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getPublicBusinessCard, type PublicBusinessCard } from "@/services/businessCard";
 import { useAppSelector } from "@/utils/hooks";
 import CardGenerator from "@/components/settings/CardGenerator";
+import ImageLightbox from "@/components/ui/ImageLightbox";
 import type { BusinessCard } from "@/services/businessCard";
 import type { Company } from "@/services/company";
 import {
@@ -23,6 +24,7 @@ export default function PublicBusinessCardPage() {
     const [loading, setLoading] = useState(true);
     const [requiresAuth, setRequiresAuth] = useState(false);
     const [cardDataUrls, setCardDataUrls] = useState<{ front: string | null; back: string | null }>({ front: null, back: null });
+    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
     useEffect(() => {
         if (slug) loadCard();
@@ -151,6 +153,7 @@ export default function PublicBusinessCardPage() {
     const hasCardImages = !!(card.card_image_front || card.card_image_back || card.background_image);
 
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 py-12 px-4">
             <div className="mx-auto max-w-2xl space-y-4">
 
@@ -160,7 +163,12 @@ export default function PublicBusinessCardPage() {
                     {/* Header: avatar + name (always shown) */}
                     <div className="flex items-center gap-4 border-b p-6">
                         {card.avatar ? (
-                            <img src={card.avatar} alt={card.full_name} className="h-16 w-16 rounded-full border-2 border-white shadow-md object-cover" />
+                            <img
+                                src={card.avatar}
+                                alt={card.full_name}
+                                className="h-16 w-16 cursor-zoom-in rounded-full border-2 border-white shadow-md object-cover"
+                                onClick={() => setLightboxSrc(card.avatar!)}
+                            />
                         ) : (
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-blue-600 text-2xl font-bold text-white shadow-md">
                                 {card.full_name.charAt(0)}
@@ -256,5 +264,9 @@ export default function PublicBusinessCardPage() {
                 <p className="text-center text-sm text-slate-500">Powered by BizzConnect</p>
             </div>
         </div>
+        {lightboxSrc && (
+            <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+        )}
+        </>
     );
 }

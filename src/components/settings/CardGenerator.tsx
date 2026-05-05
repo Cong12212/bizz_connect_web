@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { BusinessCard } from "@/services/businessCard";
 import type { Company } from "@/services/company";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, EyeIcon } from "@heroicons/react/24/outline";
+import ImageLightbox from "@/components/ui/ImageLightbox";
 
 // Standard business card: 1050 x 600px (3.5" x 2" @ 300dpi)
 const W = 1050;
@@ -19,6 +20,7 @@ export default function CardGenerator({ card, company, onRendered, sideBySide = 
     const backRef = useRef<HTMLCanvasElement>(null);
     const [generating, setGenerating] = useState(false);
     const [done, setDone] = useState(false);
+    const [lightbox, setLightbox] = useState<{ src: string; side: string } | null>(null);
 
     // Use stable key string to avoid re-rendering when parent recreates objects
     const cardKey = [
@@ -267,6 +269,19 @@ export default function CardGenerator({ card, company, onRendered, sideBySide = 
         ctx.textAlign = "left";
     }
 
+    function zoom(ref: React.RefObject<HTMLCanvasElement | null>, side: string) {
+        const canvas = ref.current;
+        if (!canvas) return;
+        try {
+            setLightbox({ src: canvas.toDataURL("image/png"), side });
+        } catch {
+            const src = side === "front"
+                ? (card.card_image_front || card.background_image)
+                : (card.card_image_back || card.background_image);
+            if (src) setLightbox({ src, side });
+        }
+    }
+
     function download(ref: React.RefObject<HTMLCanvasElement | null>, side: string) {
         const canvas = ref.current;
         if (!canvas) return;
@@ -288,45 +303,80 @@ export default function CardGenerator({ card, company, onRendered, sideBySide = 
     const cardSlot = (label: string, ref: React.RefObject<HTMLCanvasElement | null>, side: string) => (
         <div className="space-y-2 min-w-0">
             <p className="text-xs font-medium text-slate-500">{label}</p>
-            <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/10" style={{ aspectRatio: "1.586" }}>
+            <div
+                className="group relative cursor-zoom-in overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/10"
+                style={{ aspectRatio: "1.586" }}
+                onClick={() => done && zoom(ref, side)}
+            >
                 <canvas ref={ref} className="h-full w-full" />
                 {generating && <LoadingOverlay />}
+                {done && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+                        <EyeIcon className="h-8 w-8 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
+                    </div>
+                )}
             </div>
             {done && (
-                <button onClick={() => download(ref, side)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                    <ArrowDownTrayIcon className="h-4 w-4" /> Download {label}
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => zoom(ref, side)}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        <EyeIcon className="h-4 w-4" />
+                        <span className="hidden sm:inline">View</span>
+                    </button>
+                    <button onClick={() => download(ref, side)}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                        <span className="hidden sm:inline">Download</span>
+                    </button>
+                </div>
             )}
         </div>
+    );
+
+    const lb = lightbox && (
+        <ImageLightbox
+            src={lightbox.src}
+            alt={`Business card ${lightbox.side}`}
+            downloadName={`business-card-${lightbox.side}-${(card.full_name || "card").replace(/\s+/g, "-").toLowerCase()}.png`}
+            onClose={() => setLightbox(null)}
+        />
     );
 
     if (sideBySide) {
         // Digital card (background_image) → always show both Front and Back
         if (card.background_image) {
             return (
-                <div className="grid grid-cols-2 gap-4">
-                    {cardSlot("Front", frontRef, "front")}
-                    {cardSlot("Back",  backRef,  "back")}
-                </div>
+                <>
+                    <div className="grid grid-cols-2 gap-4">
+                        {cardSlot("Front", frontRef, "front")}
+                        {cardSlot("Back",  backRef,  "back")}
+                    </div>
+                    {lb}
+                </>
             );
         }
         // Physical images → show only the ones that exist
         const showFront = !!card.card_image_front;
         const showBack  = !!card.card_image_back;
         return (
-            <div className={`grid gap-4 ${showFront && showBack ? "grid-cols-2" : "mx-auto max-w-lg grid-cols-1"}`}>
-                {showFront && cardSlot("Front", frontRef, "front")}
-                {showBack  && cardSlot("Back",  backRef,  "back")}
-            </div>
+            <>
+                <div className={`grid gap-4 ${showFront && showBack ? "grid-cols-2" : "mx-auto max-w-lg grid-cols-1"}`}>
+                    {showFront && cardSlot("Front", frontRef, "front")}
+                    {showBack  && cardSlot("Back",  backRef,  "back")}
+                </div>
+                {lb}
+            </>
         );
     }
 
     return (
-        <div className="space-y-4">
-            {cardSlot("Front", frontRef, "front")}
-            {cardSlot("Back", backRef, "back")}
-        </div>
+        <>
+            <div className="space-y-4">
+                {cardSlot("Front", frontRef, "front")}
+                {cardSlot("Back", backRef, "back")}
+            </div>
+            {lb}
+        </>
     );
 }
 

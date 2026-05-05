@@ -7,7 +7,8 @@ import {
     deleteContactCardImage,
 } from "../../services/contacts";
 import { useToast } from "../ui/Toast";
-import { ArrowUpTrayIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ArrowUpTrayIcon, TrashIcon, EyeIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import ImageLightbox from "../ui/ImageLightbox";
 
 export default function ContactDetail({
     contact, onEdit, onUpdated, token,
@@ -23,6 +24,7 @@ export default function ContactDetail({
     const [cardBusy, setCardBusy] = useState<{ front: boolean; back: boolean }>({ front: false, back: false });
     const frontInputRef = useRef<HTMLInputElement>(null);
     const backInputRef  = useRef<HTMLInputElement>(null);
+    const [lightbox, setLightbox] = useState<{ src: string; name?: string } | null>(null);
 
     // ── Avatar handlers ──────────────────────────────────────────────────────
 
@@ -139,10 +141,20 @@ export default function ContactDetail({
                                 : <span>{initials(contact.name)}</span>
                             }
                             {/* Hover overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                            <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                                 {avatarBusy
                                     ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    : <ArrowUpTrayIcon className="h-5 w-5 text-white" />
+                                    : <>
+                                        <ArrowUpTrayIcon className="h-4 w-4 text-white" />
+                                        {contact.avatar_url && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setLightbox({ src: bustUrl(contact.avatar_url, contact.updated_at) as string, name: `${contact.name}-avatar.jpg` }); }}
+                                                className="flex items-center justify-center"
+                                            >
+                                                <EyeIcon className="h-4 w-4 text-white" />
+                                            </button>
+                                        )}
+                                    </>
                                 }
                             </div>
                         </div>
@@ -210,6 +222,7 @@ export default function ContactDetail({
                         inputRef={frontInputRef}
                         onUpload={(e) => handleCardChange("front", e)}
                         onDelete={() => handleCardDelete("front")}
+                        onZoom={(src) => setLightbox({ src, name: `${contact.name}-card-front.jpg` })}
                     />
                     <CardImageBox
                         label="Back"
@@ -218,9 +231,18 @@ export default function ContactDetail({
                         inputRef={backInputRef}
                         onUpload={(e) => handleCardChange("back", e)}
                         onDelete={() => handleCardDelete("back")}
+                        onZoom={(src) => setLightbox({ src, name: `${contact.name}-card-back.jpg` })}
                     />
                 </div>
             </div>
+
+            {lightbox && (
+                <ImageLightbox
+                    src={lightbox.src}
+                    downloadName={lightbox.name}
+                    onClose={() => setLightbox(null)}
+                />
+            )}
 
             {/* ── Missing fields ── */}
             {missing.length ? (
@@ -239,13 +261,14 @@ export default function ContactDetail({
 
 // ── Card Image Box ─────────────────────────────────────────────────────────────
 
-function CardImageBox({ label, url, busy, inputRef, onUpload, onDelete }: {
+function CardImageBox({ label, url, busy, inputRef, onUpload, onDelete, onZoom }: {
     label: string;
     url: string | null;
     busy: boolean;
     inputRef: React.RefObject<HTMLInputElement | null>;
     onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onDelete: () => void;
+    onZoom?: (src: string) => void;
 }) {
     return (
         <div className="space-y-1.5">
@@ -253,21 +276,35 @@ function CardImageBox({ label, url, busy, inputRef, onUpload, onDelete }: {
             <div className="group relative aspect-[1.586] overflow-hidden rounded-xl border bg-slate-50">
                 {url ? (
                     <>
-                        <img src={url} alt={`Card ${label}`} className="h-full w-full object-cover" />
+                        <img
+                            src={url}
+                            alt={`Card ${label}`}
+                            className="h-full w-full cursor-zoom-in object-cover"
+                            onClick={() => onZoom?.(url)}
+                        />
                         {/* Hover actions — always visible on touch devices */}
                         {!busy && (
                             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                                 <button
+                                    onClick={() => onZoom?.(url)}
+                                    className="flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-800 hover:bg-white"
+                                >
+                                    <EyeIcon className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">View</span>
+                                </button>
+                                <button
                                     onClick={() => inputRef.current?.click()}
                                     className="flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-xs font-medium text-slate-800 hover:bg-white"
                                 >
-                                    <ArrowUpTrayIcon className="h-3.5 w-3.5" /> Replace
+                                    <ArrowUpTrayIcon className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">Replace</span>
                                 </button>
                                 <button
                                     onClick={onDelete}
                                     className="flex items-center gap-1 rounded-lg bg-rose-500/90 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-rose-600"
                                 >
-                                    <TrashIcon className="h-3.5 w-3.5" /> Delete
+                                    <TrashIcon className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline">Delete</span>
                                 </button>
                             </div>
                         )}
