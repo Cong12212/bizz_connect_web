@@ -165,10 +165,10 @@ function TagContextMenu({
     const qDeb = useDebounced(q, 250);
     const [tags, setTags] = useState<Tag[]>([]);
     const [fetching, setFetching] = useState(false);
-    const [addingId, setAddingId] = useState<number | null>(null);
-    const [removingId, setRemovingId] = useState<number | null>(null);
+    const [addingIds, setAddingIds] = useState<Set<number>>(new Set());
+    const [removingIds, setRemovingIds] = useState<Set<number>>(new Set());
+    const [creating, setCreating] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
-    const busy = addingId !== null || removingId !== null;
 
     const currentIds = new Set((contact.tags || []).map((t) => t.id));
 
@@ -213,41 +213,41 @@ function TagContextMenu({
     }, [qDeb, token]);
 
     async function attach(tagId: number) {
-        if (currentIds.has(tagId) || busy) return;
-        setAddingId(tagId);
+        if (currentIds.has(tagId) || addingIds.has(tagId)) return;
+        setAddingIds((prev) => new Set(prev).add(tagId));
         try {
             const updated = await attachTags(contact.id, { ids: [tagId] }, token);
             onUpdated(updated);
         } catch {
             setNotice("Failed to add tag");
         } finally {
-            setAddingId(null);
+            setAddingIds((prev) => { const s = new Set(prev); s.delete(tagId); return s; });
         }
     }
 
     async function createAndAttach(name: string) {
-        if (!name.trim() || busy) return;
-        setAddingId(-1);
+        if (!name.trim() || creating) return;
+        setCreating(true);
         try {
             const updated = await attachTags(contact.id, { names: [name.trim()] }, token);
             onUpdated(updated);
         } catch {
             setNotice("Failed to create tag");
         } finally {
-            setAddingId(null);
+            setCreating(false);
         }
     }
 
     async function detach(tagId: number) {
-        if (busy) return;
-        setRemovingId(tagId);
+        if (removingIds.has(tagId)) return;
+        setRemovingIds((prev) => new Set(prev).add(tagId));
         try {
             const updated = await detachTag(contact.id, tagId, token);
             onUpdated(updated);
         } catch {
             setNotice("Failed to remove tag");
         } finally {
-            setRemovingId(null);
+            setRemovingIds((prev) => { const s = new Set(prev); s.delete(tagId); return s; });
         }
     }
 
@@ -267,7 +267,7 @@ function TagContextMenu({
             {(contact.tags || []).length > 0 && (
                 <div className="flex flex-wrap gap-1 border-b px-3 py-2">
                     {contact.tags!.map((t) => {
-                        const isRemoving = removingId === t.id;
+                        const isRemoving = removingIds.has(t.id);
                         return (
                             <span
                                 key={t.id}
@@ -282,7 +282,7 @@ function TagContextMenu({
                                 ) : (
                                     <button
                                         onClick={() => detach(t.id)}
-                                        disabled={busy || removingId !== null}
+                                        disabled={isRemoving}
                                         className="flex items-center justify-center rounded-full w-3.5 h-3.5 text-slate-400 hover:bg-slate-300 hover:text-slate-700 disabled:opacity-40 transition-colors"
                                         title={`Remove #${t.name}`}
                                     >
@@ -306,7 +306,7 @@ function TagContextMenu({
                     }}
                     placeholder="Search or create tag…"
                     className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-300"
-                    disabled={busy}
+                    disabled={creating}
                 />
             </div>
 
@@ -320,44 +320,47 @@ function TagContextMenu({
                     </div>
                 )}
 
-                {!fetching && suggestions.length === 0 && !canCreate && !busy && (
+                {!fetching && suggestions.length === 0 && !canCreate && (
                     <div className="px-3 py-3 text-center text-xs text-slate-400">
                         {q ? "No matching tags" : "All tags already applied"}
                     </div>
                 )}
 
                 {!fetching && suggestions.map((t) => {
-                    const isAdding = addingId === t.id;
+                    const isAdding = addingIds.has(t.id);
                     return (
-                        <button
-                            key={t.id}
-                            onClick={() => attach(t.id)}
-                            disabled={busy}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
-                        >
+                        <div key={t.id} className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-sm hover:bg-slate-50">
                             <span className="text-slate-400">#</span>
-                            <span className="flex-1 truncate">{t.name}</span>
-                            {isAdding ? (
-                                <svg className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                                </svg>
-                            ) : (
-                                t.contacts_count !== undefined && (
-                                    <span className="text-xs text-slate-400">{t.contacts_count}</span>
-                                )
+                            <span className="flex-1 truncate text-slate-700">{t.name}</span>
+                            {t.contacts_count !== undefined && (
+                                <span className="text-xs text-slate-400">{t.contacts_count}</span>
                             )}
-                        </button>
+                            <button
+                                onClick={() => attach(t.id)}
+                                disabled={isAdding}
+                                className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-700 hover:text-white disabled:opacity-40 transition-colors shrink-0"
+                                title={`Add #${t.name}`}
+                            >
+                                {isAdding ? (
+                                    <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                    </svg>
+                                ) : (
+                                    <span className="text-xs leading-none">+</span>
+                                )}
+                            </button>
+                        </div>
                     );
                 })}
 
                 {!fetching && canCreate && (
                     <button
                         onClick={() => createAndAttach(q)}
-                        disabled={busy}
+                        disabled={creating}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                     >
-                        {addingId === -1 ? (
+                        {creating ? (
                             <svg className="w-3.5 h-3.5 animate-spin text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
