@@ -1,7 +1,7 @@
 // src/components/contacts/ContactList.tsx
 import { useEffect, useRef, useState } from "react";
 import type { Contact } from "../../services/contacts";
-import { attachTags } from "../../services/contacts";
+import { attachTags, detachTag } from "../../services/contacts";
 import { listTags, type Tag } from "../../services/tags";
 import useDebounced from "../../hooks/useDebounced";
 import EmptyState from "../EmptyState";
@@ -165,8 +165,10 @@ function TagContextMenu({
     const qDeb = useDebounced(q, 250);
     const [tags, setTags] = useState<Tag[]>([]);
     const [fetching, setFetching] = useState(false);
-    const [busy, setBusy] = useState(false);
+    const [addingId, setAddingId] = useState<number | null>(null);
+    const [removingId, setRemovingId] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const busy = addingId !== null || removingId !== null;
 
     const currentIds = new Set((contact.tags || []).map((t) => t.id));
 
@@ -212,25 +214,40 @@ function TagContextMenu({
 
     async function attach(tagId: number) {
         if (currentIds.has(tagId) || busy) return;
-        setBusy(true);
+        setAddingId(tagId);
         try {
             const updated = await attachTags(contact.id, { ids: [tagId] }, token);
             onUpdated(updated);
         } catch {
             setNotice("Failed to add tag");
-            setBusy(false);
+        } finally {
+            setAddingId(null);
         }
     }
 
     async function createAndAttach(name: string) {
         if (!name.trim() || busy) return;
-        setBusy(true);
+        setAddingId(-1);
         try {
             const updated = await attachTags(contact.id, { names: [name.trim()] }, token);
             onUpdated(updated);
         } catch {
             setNotice("Failed to create tag");
-            setBusy(false);
+        } finally {
+            setAddingId(null);
+        }
+    }
+
+    async function detach(tagId: number) {
+        if (busy) return;
+        setRemovingId(tagId);
+        try {
+            const updated = await detachTag(contact.id, tagId, token);
+            onUpdated(updated);
+        } catch {
+            setNotice("Failed to remove tag");
+        } finally {
+            setRemovingId(null);
         }
     }
 
@@ -249,14 +266,32 @@ function TagContextMenu({
             {/* Current tags */}
             {(contact.tags || []).length > 0 && (
                 <div className="flex flex-wrap gap-1 border-b px-3 py-2">
-                    {contact.tags!.map((t) => (
-                        <span
-                            key={t.id}
-                            className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600 ring-1 ring-slate-200"
-                        >
-                            #{t.name}
-                        </span>
-                    ))}
+                    {contact.tags!.map((t) => {
+                        const isRemoving = removingId === t.id;
+                        return (
+                            <span
+                                key={t.id}
+                                className={`inline-flex items-center gap-1 rounded-full pl-2 pr-1 py-0.5 text-[11px] ring-1 transition-colors ${isRemoving ? "bg-red-600 text-white ring-red-700" : "bg-slate-100 text-slate-600 ring-slate-200"}`}
+                            >
+                                #{t.name}
+                                {isRemoving ? (
+                                    <svg className="w-3 h-3 animate-spin text-white shrink-0" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                    </svg>
+                                ) : (
+                                    <button
+                                        onClick={() => detach(t.id)}
+                                        disabled={busy || removingId !== null}
+                                        className="flex items-center justify-center rounded-full w-3.5 h-3.5 text-slate-400 hover:bg-slate-300 hover:text-slate-700 disabled:opacity-40 transition-colors"
+                                        title={`Remove #${t.name}`}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </span>
+                        );
+                    })}
                 </div>
             )}
 
@@ -291,20 +326,30 @@ function TagContextMenu({
                     </div>
                 )}
 
-                {!fetching && suggestions.map((t) => (
-                    <button
-                        key={t.id}
-                        onClick={() => attach(t.id)}
-                        disabled={busy}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
-                    >
-                        <span className="text-slate-400">#</span>
-                        <span className="flex-1 truncate">{t.name}</span>
-                        {t.contacts_count !== undefined && (
-                            <span className="text-xs text-slate-400">{t.contacts_count}</span>
-                        )}
-                    </button>
-                ))}
+                {!fetching && suggestions.map((t) => {
+                    const isAdding = addingId === t.id;
+                    return (
+                        <button
+                            key={t.id}
+                            onClick={() => attach(t.id)}
+                            disabled={busy}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
+                        >
+                            <span className="text-slate-400">#</span>
+                            <span className="flex-1 truncate">{t.name}</span>
+                            {isAdding ? (
+                                <svg className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                </svg>
+                            ) : (
+                                t.contacts_count !== undefined && (
+                                    <span className="text-xs text-slate-400">{t.contacts_count}</span>
+                                )
+                            )}
+                        </button>
+                    );
+                })}
 
                 {!fetching && canCreate && (
                     <button
@@ -312,16 +357,23 @@ function TagContextMenu({
                         disabled={busy}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                     >
-                        <span className="text-emerald-500">+</span>
+                        {addingId === -1 ? (
+                            <svg className="w-3.5 h-3.5 animate-spin text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            </svg>
+                        ) : (
+                            <span className="text-emerald-500">+</span>
+                        )}
                         Create "{q.trim()}"
                     </button>
                 )}
             </div>
 
             {/* Footer */}
-            {(busy || notice) && (
+            {notice && (
                 <div className="border-t px-3 py-1.5 text-xs text-slate-500">
-                    {busy ? "Saving…" : notice}
+                    {notice}
                 </div>
             )}
         </div>
